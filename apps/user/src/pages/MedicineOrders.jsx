@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Eye, CheckCircle, Truck, PackageCheck, XCircle, Pill, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Card from '../components/common/Card'
@@ -24,15 +24,43 @@ export default function MedicineOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [staffNotes, setStaffNotes] = useState('')
-  const [page, setPage] = useState(1)
-  const limit = 10
+  const limit = 30
 
-  // Query
-  const { data: response, isLoading } = useQuery({
+  // Infinite Query (loads 30 per batch)
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
     queryKey: ['medicineOrders', search],
-    queryFn: () => medicineOrderService.getOrders({ search }),
+    queryFn: ({ pageParam = 1 }) => medicineOrderService.getOrders({ search, page: pageParam, limit }),
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || lastPage.page >= lastPage.totalPages) return undefined
+      return lastPage.page + 1
+    },
     refetchInterval: isMockMode() ? false : 30000,
   })
+
+  // Window Scroll Listener for Infinite Scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!hasNextPage || isFetchingNextPage) return
+      const scrollPosition = window.innerHeight + window.scrollY
+      const threshold = document.documentElement.scrollHeight - 300
+      if (scrollPosition >= threshold) {
+        fetchNextPage()
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // Flatten orders across pages
+  const orders = data?.pages ? data.pages.flatMap((page) => page.data || []) : []
+  const total = data?.pages?.[0]?.total ?? orders.length
 
   // Mutation
   const statusMutation = useMutation({
@@ -56,18 +84,6 @@ export default function MedicineOrders() {
   }
 
   const columns = ['Order ID', 'Patient', 'Mobile', 'Status', 'Actions']
-  const orders = response?.data || []
-  const total = orders.length
-  const totalPages = Math.max(1, Math.ceil(total / limit))
-  const paginatedOrders = orders.slice((page - 1) * limit, page * limit)
-
-  const pagination = {
-    page,
-    limit,
-    total,
-    totalPages,
-    onPageChange: setPage,
-  }
 
   const renderRow = (order) => (
     <tr key={order.id}>
@@ -108,7 +124,7 @@ export default function MedicineOrders() {
             className={styles.searchInput}
             placeholder="Search by name or ID..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
@@ -119,13 +135,28 @@ export default function MedicineOrders() {
             <Loader size="lg" />
           </div>
         ) : (
-          <Table
-            columns={columns}
-            data={paginatedOrders}
-            renderRow={renderRow}
-            pagination={pagination}
-            emptyMessage="No medicine orders found."
-          />
+          <>
+            <Table
+              columns={columns}
+              data={orders}
+              renderRow={renderRow}
+              emptyMessage="No medicine orders found."
+            />
+            {orders.length > 0 && (
+              <div className={styles.scrollFooter}>
+                {isFetchingNextPage ? (
+                  <div className={styles.scrollLoader}>
+                    <Loader size="sm" />
+                    <span>Loading more orders (30 per batch)...</span>
+                  </div>
+                ) : hasNextPage ? (
+                  <span>Scroll down to load more · Showing {orders.length} of {total}</span>
+                ) : (
+                  <span>All {total} medicine orders loaded</span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </Card>
 

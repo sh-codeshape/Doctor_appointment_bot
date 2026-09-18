@@ -43,6 +43,10 @@ class MedicineOrderRepository {
 
     const conditions = []
     if (filter.status) conditions.push(sql`mo.status = ${filter.status}`)
+    if (filter.search) {
+      const q = `%${filter.search}%`
+      conditions.push(sql`(mo.order_id ILIKE ${q} OR p.name ILIKE ${q} OR p.phone ILIKE ${q})`)
+    }
     if (filter.patientIds && Array.isArray(filter.patientIds) && filter.patientIds.length > 0) {
       conditions.push(sql`mo.patient_id IN ${sql(filter.patientIds)}`)
     } else if (filter.patientIds && Array.isArray(filter.patientIds) && filter.patientIds.length === 0) {
@@ -60,7 +64,7 @@ class MedicineOrderRepository {
       LIMIT ${limit} OFFSET ${offset}
     `
 
-    const [totalRow] = await sql`SELECT count(*) FROM medicine_orders mo ${whereClause}`
+    const [totalRow] = await sql`SELECT count(*) FROM medicine_orders mo LEFT JOIN patients p ON mo.patient_id = p.id ${whereClause}`
     const total = Number(totalRow.count)
 
     return {

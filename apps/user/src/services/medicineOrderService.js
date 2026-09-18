@@ -27,11 +27,17 @@ export const medicineOrderService = {
         const q = params.search.toLowerCase()
         list = list.filter(
           (o) =>
-            o.patient_name.toLowerCase().includes(q) ||
-            o.order_id.toLowerCase().includes(q)
+            o.patient_name?.toLowerCase().includes(q) ||
+            o.order_id?.toLowerCase().includes(q) ||
+            o.mobile?.toLowerCase().includes(q)
         )
       }
-      return { data: list, total: list.length, page: 1, limit: 10, totalPages: 1 }
+      const page = Number(params.page) || 1
+      const limit = Number(params.limit) || 10
+      const total = list.length
+      const totalPages = Math.ceil(total / limit) || 1
+      const paginatedList = list.slice((page - 1) * limit, page * limit)
+      return { data: paginatedList, total, page, limit, totalPages }
     }
     const { data } = await api.get('/medicine-orders', { params })
     return {
