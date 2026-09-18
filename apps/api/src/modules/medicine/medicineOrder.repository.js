@@ -45,7 +45,7 @@ class MedicineOrderRepository {
     if (filter.status) conditions.push(sql`mo.status = ${filter.status}`)
     if (filter.search) {
       const q = `%${filter.search}%`
-      conditions.push(sql`(mo.order_id ILIKE ${q} OR p.name ILIKE ${q} OR p.phone ILIKE ${q})`)
+      conditions.push(sql`(COALESCE(mo.order_id, '') ILIKE ${q} OR COALESCE(p.name, '') ILIKE ${q} OR COALESCE(p.phone, '') ILIKE ${q} OR COALESCE(mo.delivery_address, '') ILIKE ${q})`)
     }
     if (filter.patientIds && Array.isArray(filter.patientIds) && filter.patientIds.length > 0) {
       conditions.push(sql`mo.patient_id IN ${sql(filter.patientIds)}`)

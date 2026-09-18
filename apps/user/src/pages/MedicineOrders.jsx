@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Eye, CheckCircle, Truck, PackageCheck, XCircle, Pill, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -24,6 +24,7 @@ export default function MedicineOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [staffNotes, setStaffNotes] = useState('')
+  const sentinelRef = useRef(null)
   const limit = 30
 
   // Infinite Query (loads 30 per batch)
@@ -43,19 +44,38 @@ export default function MedicineOrders() {
     refetchInterval: isMockMode() ? false : 30000,
   })
 
-  // Window Scroll Listener for Infinite Scroll
+  // Intersection Observer + Window Scroll Listener for Infinite Scroll
   useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { root: null, rootMargin: '350px', threshold: 0 }
+    )
+
+    const el = sentinelRef.current
+    if (el) observer.observe(el)
+
     const handleScroll = () => {
       if (!hasNextPage || isFetchingNextPage) return
       const scrollPosition = window.innerHeight + window.scrollY
-      const threshold = document.documentElement.scrollHeight - 300
+      const threshold = document.documentElement.scrollHeight - 350
       if (scrollPosition >= threshold) {
         fetchNextPage()
       }
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+
+    return () => {
+      if (el) observer.unobserve(el)
+      observer.disconnect()
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // Flatten orders across pages
@@ -122,7 +142,7 @@ export default function MedicineOrders() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by name or ID..."
+            placeholder="Search by name, ID or mobile..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -142,6 +162,7 @@ export default function MedicineOrders() {
               renderRow={renderRow}
               emptyMessage="No medicine orders found."
             />
+            <div ref={sentinelRef} style={{ height: '1px', width: '100%' }} />
             {orders.length > 0 && (
               <div className={styles.scrollFooter}>
                 {isFetchingNextPage ? (
