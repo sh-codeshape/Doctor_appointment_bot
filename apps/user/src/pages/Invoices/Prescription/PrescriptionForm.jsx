@@ -26,27 +26,34 @@ const DEFAULT_MEDICINES = [
 ]
 
 const MEDICINE_STORAGE_KEY = 'kg-nanda-prescription-medicines'
+const DOCTOR_STORAGE_KEY = 'kg-nanda-prescription-doctors'
+
+function formatDoctorName(name) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return ''
+  return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`
+}
 
 const DEFAULT_DOCTORS = [
-  { id: 1, department_id: 2, name: 'Abhinav Katiyar', role: 'Laparoscopic Surgeon', department: 'Laparoscopic & General Surgery', qualification: 'MBBS, DNB', experience: '12+ Years', consultation_fee: 500, is_active: true, image: '' },
-  { id: 2, department_id: 1, name: 'Anand Prakash Tiwari', role: 'Senior Gynaecologist & Infertility Specialist', department: 'Obstetrics & Gynaecology', qualification: 'M.S. (Obs & Gynae)', experience: '15+ Years', consultation_fee: 500, is_active: true, image: '' },
-  { id: 3, department_id: 4, name: 'Vikram Singh', role: 'Urologist', department: 'Urology', qualification: 'MBBS, MCH', experience: '14+ Years', consultation_fee: 600, is_active: true, image: '' },
-  { id: 4, department_id: 3, name: 'Arun Kumar Singh', role: 'Orthopedic Surgeon', department: 'Orthopaedics', qualification: 'MBBS', experience: '10+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 5, department_id: 2, name: 'Vishwanath Pratap Singh', role: 'Laparoscopic Surgeon', department: 'Laparoscopic & General Surgery', qualification: 'MBBS, MS', experience: '11+ Years', consultation_fee: 500, is_active: true, image: '' },
-  { id: 6, department_id: 3, name: 'Pankaj Kumar Singh', role: 'Orthopedic Specialist', department: 'Orthopaedics', qualification: 'MBBS, MS', experience: '13+ Years', consultation_fee: 500, is_active: true, image: '' },
-  { id: 7, department_id: 5, name: 'Sushil Krishna Murti', role: 'Anesthesiologist', department: 'Anaesthetist', qualification: 'MBBS, MD', experience: '16+ Years', consultation_fee: 500, is_active: true, image: '' },
-  { id: 8, department_id: 6, name: 'Mrityunjay Prasad', role: 'General & Ayurvedic Surgeon', department: 'General Surgery (Shalya)', qualification: 'MS (Shalya)', experience: '12+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 9, department_id: 9, name: 'Ankit Kumar Singh', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'MBBS', experience: '6+ Years', consultation_fee: 300, is_active: true, image: '' },
-  { id: 10, department_id: 7, name: 'Prabhunath Dubey', role: 'Pediatric Specialist', department: 'Paediatric', qualification: 'BMS, PGDNC', experience: '10+ Years', consultation_fee: 350, is_active: true, image: '' },
-  { id: 11, department_id: 8, name: 'Abhinav Mishra', role: 'ENT Specialist', department: 'ENT', qualification: 'MBBS, MS (ENT)', experience: '9+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 12, department_id: 6, name: 'Yogesh Kumar Pandey', role: 'General & Ayurvedic Surgeon', department: 'General Surgery (Shalya)', qualification: 'MS (Shalya)', experience: '11+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 13, department_id: 9, name: 'Akhilesh Kumar Singh', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'BAMS (RMO)', experience: '7+ Years', consultation_fee: 300, is_active: true, image: '' },
-  { id: 14, department_id: 3, name: 'Niket Raj Garg', role: 'Orthopedic Surgeon', department: 'Orthopaedics', qualification: 'MBBS, MS', experience: '10+ Years', consultation_fee: 450, is_active: true, image: '' },
-  { id: 15, department_id: 7, name: 'Dilip Kumar Gupta', role: 'Senior Pediatrician', department: 'Paediatric', qualification: 'MBBS, DCH', experience: '14+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 16, department_id: 9, name: 'Parvez Ahmad', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'BAMS, MD', experience: '8+ Years', consultation_fee: 300, is_active: true, image: '' },
-  { id: 17, department_id: 9, name: 'Umesh Kumar Maurya', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'MBBS', experience: '9+ Years', consultation_fee: 350, is_active: true, image: '' },
-  { id: 18, department_id: 1, name: 'Shobha Jaiswal', role: 'Gynecologist & Obstetrician', department: 'Obstetrics & Gynaecology', qualification: 'MBBS, MS (Obs & Gynae)', experience: '12+ Years', consultation_fee: 400, is_active: true, image: '' },
-  { id: 19, department_id: 1, name: 'Sadhna Chaurasiya', role: 'Gynecologist & Obstetrician', department: 'Obstetrics & Gynaecology', qualification: 'MBBS, DGO', experience: '9+ Years', consultation_fee: 350, is_active: true, image: '' },
+  { id: 1, department_id: 2, name: 'Dr. Abhinav Katiyar', role: 'Laparoscopic Surgeon', department: 'Laparoscopic & General Surgery', qualification: 'MBBS, DNB', experience: '12+ Years', consultation_fee: 500, is_active: true, image: '' },
+  { id: 2, department_id: 1, name: 'Dr. Anand Prakash Tiwari', role: 'Senior Gynaecologist & Infertility Specialist', department: 'Obstetrics & Gynaecology', qualification: 'M.S. (Obs & Gynae)', experience: '15+ Years', consultation_fee: 500, is_active: true, image: '' },
+  { id: 3, department_id: 4, name: 'Dr. Vikram Singh', role: 'Urologist', department: 'Urology', qualification: 'MBBS, MCH', experience: '14+ Years', consultation_fee: 600, is_active: true, image: '' },
+  { id: 4, department_id: 3, name: 'Dr. Arun Kumar Singh', role: 'Orthopedic Surgeon', department: 'Orthopaedics', qualification: 'MBBS', experience: '10+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 5, department_id: 2, name: 'Dr. Vishwanath Pratap Singh', role: 'Laparoscopic Surgeon', department: 'Laparoscopic & General Surgery', qualification: 'MBBS, MS', experience: '11+ Years', consultation_fee: 500, is_active: true, image: '' },
+  { id: 6, department_id: 3, name: 'Dr. Pankaj Kumar Singh', role: 'Orthopedic Specialist', department: 'Orthopaedics', qualification: 'MBBS, MS', experience: '13+ Years', consultation_fee: 500, is_active: true, image: '' },
+  { id: 7, department_id: 5, name: 'Dr. Sushil Krishna Murti', role: 'Anesthesiologist', department: 'Anaesthetist', qualification: 'MBBS, MD', experience: '16+ Years', consultation_fee: 500, is_active: true, image: '' },
+  { id: 8, department_id: 6, name: 'Dr. Mrityunjay Prasad', role: 'General & Ayurvedic Surgeon', department: 'General Surgery (Shalya)', qualification: 'MS (Shalya)', experience: '12+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 9, department_id: 9, name: 'Dr. Ankit Kumar Singh', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'MBBS', experience: '6+ Years', consultation_fee: 300, is_active: true, image: '' },
+  { id: 10, department_id: 7, name: 'Dr. Prabhunath Dubey', role: 'Pediatric Specialist', department: 'Paediatric', qualification: 'BMS, PGDNC', experience: '10+ Years', consultation_fee: 350, is_active: true, image: '' },
+  { id: 11, department_id: 8, name: 'Dr. Abhinav Mishra', role: 'ENT Specialist', department: 'ENT', qualification: 'MBBS, MS (ENT)', experience: '9+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 12, department_id: 6, name: 'Dr. Yogesh Kumar Pandey', role: 'General & Ayurvedic Surgeon', department: 'General Surgery (Shalya)', qualification: 'MS (Shalya)', experience: '11+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 13, department_id: 9, name: 'Dr. Akhilesh Kumar Singh', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'BAMS (RMO)', experience: '7+ Years', consultation_fee: 300, is_active: true, image: '' },
+  { id: 14, department_id: 3, name: 'Dr. Niket Raj Garg', role: 'Orthopedic Surgeon', department: 'Orthopaedics', qualification: 'MBBS, MS', experience: '10+ Years', consultation_fee: 450, is_active: true, image: '' },
+  { id: 15, department_id: 7, name: 'Dr. Dilip Kumar Gupta', role: 'Senior Pediatrician', department: 'Paediatric', qualification: 'MBBS, DCH', experience: '14+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 16, department_id: 9, name: 'Dr. Parvez Ahmad', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'BAMS, MD', experience: '8+ Years', consultation_fee: 300, is_active: true, image: '' },
+  { id: 17, department_id: 9, name: 'Dr. Umesh Kumar Maurya', role: 'Resident Medical Officer', department: 'RMO - Resident Medical Officer', qualification: 'MBBS', experience: '9+ Years', consultation_fee: 350, is_active: true, image: '' },
+  { id: 18, department_id: 1, name: 'Dr. Shobha Jaiswal', role: 'Gynecologist & Obstetrician', department: 'Obstetrics & Gynaecology', qualification: 'MBBS, MS (Obs & Gynae)', experience: '12+ Years', consultation_fee: 400, is_active: true, image: '' },
+  { id: 19, department_id: 1, name: 'Dr. Sadhna Chaurasiya', role: 'Gynecologist & Obstetrician', department: 'Obstetrics & Gynaecology', qualification: 'MBBS, DGO', experience: '9+ Years', consultation_fee: 350, is_active: true, image: '' },
 ]
 
 function medicineId(name) {
@@ -233,6 +240,14 @@ export default function PrescriptionForm({
     frequency: '',
     period: '',
   })
+  const [doctorManagerOpen, setDoctorManagerOpen] = useState(false)
+  const [doctorEditingId, setDoctorEditingId] = useState(null)
+  const [doctorDraft, setDoctorDraft] = useState({
+    name: '',
+    qualification: '',
+    role: '',
+    department: '',
+  })
 
   useEffect(() => {
     setForm(
@@ -243,6 +258,20 @@ export default function PrescriptionForm({
     setPatientFound(false)
     setPatientError('')
   }, [initialData])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DOCTOR_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDoctorCatalog(parsed)
+        }
+      }
+    } catch {
+      // Keep the built-in doctor list if localStorage is unavailable.
+    }
+  }, [])
 
   useEffect(() => {
     // Load doctors from the backend. If the API is unavailable,
@@ -269,10 +298,19 @@ export default function PrescriptionForm({
           .filter((doctor) => doctor?.name || doctor?.doctorName || doctor?.fullName)
           .map((doctor) => ({
             ...doctor,
-            name: String(doctor.name || doctor.doctorName || doctor.fullName).trim(),
+            name: formatDoctorName(doctor.name || doctor.doctorName || doctor.fullName),
           }))
 
-        if (doctors.length) setDoctorCatalog(doctors)
+        if (doctors.length) {
+          try {
+            const saved = localStorage.getItem(DOCTOR_STORAGE_KEY)
+            if (!saved) {
+              setDoctorCatalog(doctors)
+            }
+          } catch {
+            setDoctorCatalog(doctors)
+          }
+        }
       })
       .catch(() => {
         // Keep default doctors when the backend endpoint is not available.
@@ -280,6 +318,96 @@ export default function PrescriptionForm({
 
     return () => controller.abort()
   }, [])
+
+  const persistDoctorCatalog = (nextCatalog) => {
+    setDoctorCatalog(nextCatalog)
+    try {
+      localStorage.setItem(DOCTOR_STORAGE_KEY, JSON.stringify(nextCatalog))
+    } catch {
+      // The form still works if browser storage is unavailable.
+    }
+  }
+
+  const openAddDoctorManager = () => {
+    setDoctorEditingId(null)
+    setDoctorDraft({ name: '', qualification: '', role: '', department: '' })
+    setDoctorManagerOpen(true)
+  }
+
+  const openEditDoctor = (doctor) => {
+    setDoctorEditingId(doctor.id || doctor.name)
+    setDoctorDraft({
+      name: doctor.name || '',
+      qualification: doctor.qualification || '',
+      role: doctor.role || '',
+      department: doctor.department || '',
+    })
+    setDoctorManagerOpen(true)
+  }
+
+  const saveDoctorMaster = () => {
+    const rawName = doctorDraft.name.trim()
+    if (!rawName) {
+      alert('Doctor name is required.')
+      return
+    }
+    const name = formatDoctorName(rawName)
+
+    if (doctorEditingId) {
+      const oldDoctor = doctorCatalog.find((item) => (item.id || item.name) === doctorEditingId)
+      const nextCatalog = doctorCatalog.map((item) =>
+        (item.id || item.name) === doctorEditingId
+          ? {
+              ...item,
+              name,
+              qualification: doctorDraft.qualification.trim(),
+              role: doctorDraft.role.trim(),
+              department: doctorDraft.department.trim(),
+            }
+          : item
+      )
+      persistDoctorCatalog(nextCatalog)
+
+      if (oldDoctor && oldDoctor.name !== name) {
+        setForm((prev) => ({
+          ...prev,
+          doctors: prev.doctors.map((doc) => (doc === oldDoctor.name ? name : doc)),
+        }))
+      }
+    } else {
+      const duplicate = doctorCatalog.some(
+        (item) => item.name.trim().toLowerCase() === name.toLowerCase()
+      )
+      if (duplicate) {
+        alert('This doctor already exists in the catalog.')
+        return
+      }
+
+      persistDoctorCatalog([
+        ...doctorCatalog,
+        {
+          id: `doc-${Date.now()}`,
+          name,
+          qualification: doctorDraft.qualification.trim(),
+          role: doctorDraft.role.trim(),
+          department: doctorDraft.department.trim(),
+          is_active: true,
+        },
+      ])
+    }
+
+    setDoctorEditingId(null)
+    setDoctorDraft({ name: '', qualification: '', role: '', department: '' })
+  }
+
+  const deleteDoctorMaster = (id) => {
+    const doctor = doctorCatalog.find((item) => (item.id || item.name) === id)
+    if (!doctor) return
+
+    if (!window.confirm(`Delete "${doctor.name}" from the doctor list?`)) return
+    const nextCatalog = doctorCatalog.filter((item) => (item.id || item.name) !== id)
+    persistDoctorCatalog(nextCatalog)
+  }
 
   useEffect(() => {
     try {
@@ -618,7 +746,7 @@ export default function PrescriptionForm({
                   <Search size={16} />
                   <input
                     value={form.uhid}
-                    onChange={(e) => update('uhid', e.target.value)}
+                    onChange={(e) => update('uhid', e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                     placeholder="Enter UHID (e.g. 16752)"
                   />
                 </div>
@@ -631,7 +759,7 @@ export default function PrescriptionForm({
                 <div className={styles.uhidSearch}>
                   <input
                     value={form.bookingId}
-                    onChange={(e) => update('bookingId', e.target.value)}
+                    onChange={(e) => update('bookingId', e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                     placeholder="Enter Token Number"
                   />
                 </div>
@@ -649,21 +777,37 @@ export default function PrescriptionForm({
             <Field label="Patient Name" required>
               <input
                 value={form.patientName}
-                onChange={(e) => update('patientName', e.target.value)}
+                onChange={(e) => update('patientName', e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))}
                 placeholder="e.g. Mr Surendra Agrahari"
               />
             </Field>
             <Field label="Mobile Number">
-              <input value={form.mobile} onChange={(e) => update('mobile', e.target.value)} placeholder="10 digit mobile number" />
+              <input
+                value={form.mobile}
+                onChange={(e) => update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="10 digit mobile number"
+              />
             </Field>
             <Field label="Father / Husband Name">
-              <input value={form.fatherName} onChange={(e) => update('fatherName', e.target.value)} />
+              <input
+                value={form.fatherName}
+                onChange={(e) => update('fatherName', e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))}
+                placeholder="Father's / Husband's Name"
+              />
             </Field>
             <Field label="Address">
-              <input value={form.address} onChange={(e) => update('address', e.target.value)} />
+              <input
+                value={form.address}
+                onChange={(e) => update('address', e.target.value.replace(/[^a-zA-Z0-9\s,.\-\/#]/g, ''))}
+                placeholder="Patient Address"
+              />
             </Field>
             <Field label="Age">
-              <input value={form.age} onChange={(e) => update('age', e.target.value)} />
+              <input
+                value={form.age}
+                onChange={(e) => update('age', e.target.value.replace(/\D/g, '').slice(0, 3))}
+                placeholder="Age in years (e.g. 35)"
+              />
             </Field>
             <Field label="Sex">
               <select value={form.sex} onChange={(e) => update('sex', e.target.value)}>
@@ -683,7 +827,7 @@ export default function PrescriptionForm({
             <Field label="UHID Number" required>
               <input
                 value={form.uhid}
-                onChange={(e) => update('uhid', e.target.value)}
+                onChange={(e) => update('uhid', e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                 placeholder="UHID Number"
               />
             </Field>
@@ -709,7 +853,19 @@ export default function PrescriptionForm({
                 <b>Doctor / Consultant</b>
                 <span>Add one or more consultants who signed the prescription.</span>
               </div>
-              <button type="button" className={styles.add} onClick={addDoctor}><Plus size={14} /> Add Doctor</button>
+              <div className={styles.medicineSectionActions}>
+                <button
+                  type="button"
+                  className={styles.manageMedicine}
+                  onClick={openAddDoctorManager}
+                >
+                  <PencilIcon size={13} />
+                  Manage Doctors
+                </button>
+                <button type="button" className={styles.add} onClick={addDoctor}>
+                  <Plus size={14} /> Add Doctor
+                </button>
+              </div>
             </div>
 
             {form.doctors.map((doctor, index) => (
@@ -1025,6 +1181,141 @@ export default function PrescriptionForm({
             </div>
           )}
 
+          {doctorManagerOpen && (
+            <div
+              className={styles.medicineManagerBackdrop}
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setDoctorManagerOpen(false)}
+            >
+              <div
+                className={styles.medicineManager}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.medicineManagerHeader}>
+                  <div>
+                    <span>DOCTOR CATALOG</span>
+                    <h3>{doctorEditingId ? 'Edit Doctor' : 'Manage Doctors'}</h3>
+                    <p>Add new doctors, edit details or remove doctors from the prescription list.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.managerClose}
+                    onClick={() => setDoctorManagerOpen(false)}
+                    title="Close"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+
+                <div className={styles.medicineManagerBody}>
+                  <div className={styles.medicineMasterForm}>
+                    <Field label="Doctor Name" required>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dr. Ramesh Gupta"
+                        value={doctorDraft.name}
+                        onChange={(e) =>
+                          setDoctorDraft((prev) => ({ ...prev, name: e.target.value.replace(/[^a-zA-Z\s\.\-]/g, '') }))
+                        }
+                      />
+                    </Field>
+
+                    <Field label="Qualification">
+                      <input
+                        type="text"
+                        placeholder="e.g. MBBS, MS (General Surgery)"
+                        value={doctorDraft.qualification}
+                        onChange={(e) =>
+                          setDoctorDraft((prev) => ({ ...prev, qualification: e.target.value.replace(/[^a-zA-Z0-9\s,.\(\)\-\/&]/g, '') }))
+                        }
+                      />
+                    </Field>
+
+                    <Field label="Role / Specialization">
+                      <input
+                        type="text"
+                        placeholder="e.g. Laparoscopic Surgeon"
+                        value={doctorDraft.role}
+                        onChange={(e) =>
+                          setDoctorDraft((prev) => ({ ...prev, role: e.target.value.replace(/[^a-zA-Z0-9\s,.\(\)\-\/&]/g, '') }))
+                        }
+                      />
+                    </Field>
+
+                    <Field label="Department">
+                      <input
+                        type="text"
+                        placeholder="e.g. General Surgery"
+                        value={doctorDraft.department}
+                        onChange={(e) =>
+                          setDoctorDraft((prev) => ({ ...prev, department: e.target.value.replace(/[^a-zA-Z0-9\s,.\(\)\-\/&]/g, '') }))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <div className={styles.managerActions}>
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => {
+                        setDoctorEditingId(null)
+                        setDoctorDraft({ name: '', qualification: '', role: '', department: '' })
+                      }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primary}
+                      onClick={saveDoctorMaster}
+                    >
+                      <Save size={15} />
+                      {doctorEditingId ? 'Update Doctor' : 'Add Doctor'}
+                    </button>
+                  </div>
+
+                  <div className={styles.medicineMasterList}>
+                    <div className={styles.masterListTitle}>
+                      <b>Available Doctors</b>
+                      <span>{doctorCatalog.length} doctors</span>
+                    </div>
+
+                    {doctorCatalog.map((doc) => (
+                      <div className={styles.masterMedicineRow} key={doc.id || doc.name}>
+                        <div className={styles.masterMedicineInfo}>
+                          <b>{doc.name}</b>
+                          <span>
+                            {doc.qualification || 'No qualification specified'}
+                            {doc.role ? ` • ${doc.role}` : ''}
+                            {doc.department ? ` • ${doc.department}` : ''}
+                          </span>
+                        </div>
+                        <div className={styles.masterMedicineActions}>
+                          <button
+                            type="button"
+                            onClick={() => openEditDoctor(doc)}
+                            title="Edit doctor"
+                          >
+                            <PencilIcon size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteDoctorMaster(doc.id || doc.name)}
+                            title="Delete doctor"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.bottom}>
             <Field label="Investigation">
               <textarea rows="3" value={form.investigation} onChange={(e) => update('investigation', e.target.value)} placeholder="Investigation / test instructions" />
@@ -1181,11 +1472,11 @@ export function PrescriptionPrintDocument({ data }) {
                 <tbody>
                   <tr>
                     <td style={{ padding: '0.8mm 0', border: 'none', width: '20%', whiteSpace: 'nowrap' }}><b>Doctor :</b></td>
-                    <td style={{ padding: '0.8mm 0 0.8mm 2mm', border: 'none' }}>{doctors[0] ? String(doctors[0]).toUpperCase() : ''}</td>
+                    <td style={{ padding: '0.8mm 0 0.8mm 2mm', border: 'none' }}>{doctors[0] ? formatDoctorName(doctors[0]).toUpperCase() : ''}</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '0.8mm 0', border: 'none', whiteSpace: 'nowrap' }}><b>Doctor :</b></td>
-                    <td style={{ padding: '0.8mm 0 0.8mm 2mm', border: 'none' }}>{doctors[1] ? String(doctors[1]).toUpperCase() : ''}</td>
+                    <td style={{ padding: '0.8mm 0 0.8mm 2mm', border: 'none' }}>{doctors[1] ? formatDoctorName(doctors[1]).toUpperCase() : ''}</td>
                   </tr>
                 </tbody>
               </table>

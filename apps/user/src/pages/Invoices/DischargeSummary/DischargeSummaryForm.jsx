@@ -3,26 +3,32 @@ import styles from "./DischargeSummaryForm.module.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+function formatDoctorName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "";
+  return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
+}
+
 const DOCTORS = [
-  { id: 1, name: "Abhinav Katiyar", qualification: "MBBS, DNB" },
-  { id: 2, name: "Anand Prakash Tiwari", qualification: "M.S. (Obs & Gynae)" },
-  { id: 3, name: "Vikram Singh", qualification: "MBBS, MCH" },
-  { id: 4, name: "Arun Kumar Singh", qualification: "MBBS" },
-  { id: 5, name: "Vishwanath Pratap Singh", qualification: "MBBS, MS" },
-  { id: 6, name: "Pankaj Kumar Singh", qualification: "MBBS, MS" },
-  { id: 7, name: "Sushil Krishna Murti", qualification: "MBBS, MD" },
-  { id: 8, name: "Mrityunjay Prasad", qualification: "MS (Shalya)" },
-  { id: 9, name: "Ankit Kumar Singh", qualification: "MBBS" },
-  { id: 10, name: "Prabhunath Dubey", qualification: "BMS, PGDNC" },
-  { id: 11, name: "Abhinav Mishra", qualification: "MBBS, MS (ENT)" },
-  { id: 12, name: "Yogesh Kumar Pandey", qualification: "MS (Shalya)" },
-  { id: 13, name: "Akhilesh Kumar Singh", qualification: "BAMS (RMO)" },
-  { id: 14, name: "Niket Raj Garg", qualification: "MBBS, MS" },
-  { id: 15, name: "Dilip Kumar Gupta", qualification: "MBBS, DCH" },
-  { id: 16, name: "Parvez Ahmad", qualification: "BAMS, MD" },
-  { id: 17, name: "Umesh Kumar Maurya", qualification: "MBBS" },
-  { id: 18, name: "Shobha Jaiswal", qualification: "MBBS, MS (Obs & Gynae)" },
-  { id: 19, name: "Sadhna Chaurasiya", qualification: "MBBS, DGO" },
+  { id: 1, name: "Dr. Abhinav Katiyar", qualification: "MBBS, DNB" },
+  { id: 2, name: "Dr. Anand Prakash Tiwari", qualification: "M.S. (Obs & Gynae)" },
+  { id: 3, name: "Dr. Vikram Singh", qualification: "MBBS, MCH" },
+  { id: 4, name: "Dr. Arun Kumar Singh", qualification: "MBBS" },
+  { id: 5, name: "Dr. Vishwanath Pratap Singh", qualification: "MBBS, MS" },
+  { id: 6, name: "Dr. Pankaj Kumar Singh", qualification: "MBBS, MS" },
+  { id: 7, name: "Dr. Sushil Krishna Murti", qualification: "MBBS, MD" },
+  { id: 8, name: "Dr. Mrityunjay Prasad", qualification: "MS (Shalya)" },
+  { id: 9, name: "Dr. Ankit Kumar Singh", qualification: "MBBS" },
+  { id: 10, name: "Dr. Prabhunath Dubey", qualification: "BMS, PGDNC" },
+  { id: 11, name: "Dr. Abhinav Mishra", qualification: "MBBS, MS (ENT)" },
+  { id: 12, name: "Dr. Yogesh Kumar Pandey", qualification: "MS (Shalya)" },
+  { id: 13, name: "Dr. Akhilesh Kumar Singh", qualification: "BAMS (RMO)" },
+  { id: 14, name: "Dr. Niket Raj Garg", qualification: "MBBS, MS" },
+  { id: 15, name: "Dr. Dilip Kumar Gupta", qualification: "MBBS, DCH" },
+  { id: 16, name: "Dr. Parvez Ahmad", qualification: "BAMS, MD" },
+  { id: 17, name: "Dr. Umesh Kumar Maurya", qualification: "MBBS" },
+  { id: 18, name: "Dr. Shobha Jaiswal", qualification: "MBBS, MS (Obs & Gynae)" },
+  { id: 19, name: "Dr. Sadhna Chaurasiya", qualification: "MBBS, DGO" },
 ];
 
 const DIAGNOSIS_OPTIONS = [
@@ -128,12 +134,7 @@ const formatTime = (value) => {
 const doctorOptionValue = (doctor) => {
   if (!doctor) return "";
   const raw = String(doctor).trim();
-  const found = DOCTORS.find(
-    (item) =>
-      raw.toLowerCase() === item.name.toLowerCase() ||
-      raw.toLowerCase().includes(item.name.toLowerCase())
-  );
-  return found ? found.name : raw;
+  return formatDoctorName(raw);
 };
 
 function normalizePatient(data = {}) {
@@ -214,8 +215,8 @@ function normalizePatient(data = {}) {
       data.patientAddress ||
       data.patient_address ||
       "",
-    consultantName: consultantVal,
-    consultants: consultantsList.length ? consultantsList : [""],
+    consultantName: consultantVal ? formatDoctorName(consultantVal) : "",
+    consultants: consultantsList.length ? consultantsList.map((c) => formatDoctorName(c)) : [""],
     anaestheticsDoctor:
       doctorOptionValue(
         data.anaestheticsDoctor ||
@@ -232,9 +233,243 @@ export default function DischargeSummaryForm() {
   const [bookingNo, setBookingNo] = useState("");
   const [patient, setPatient] = useState(emptyPatient);
   const [form, setForm] = useState(emptyForm);
+  const [doctorList, setDoctorList] = useState(DOCTORS);
+  const [showDoctorManage, setShowDoctorManage] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState(null);
+  const [doctorForm, setDoctorForm] = useState({ name: "", qualification: "" });
+
+  const [diagnosisList, setDiagnosisList] = useState(DIAGNOSIS_OPTIONS);
+  const [showDiagnosisManage, setShowDiagnosisManage] = useState(false);
+  const [editingDiagnosis, setEditingDiagnosis] = useState(null);
+  const [diagnosisForm, setDiagnosisForm] = useState({ text: "" });
+
+  const [procedureList, setProcedureList] = useState(PROCEDURE_OPTIONS);
+  const [showProcedureManage, setShowProcedureManage] = useState(false);
+  const [editingProcedure, setEditingProcedure] = useState(null);
+  const [procedureForm, setProcedureForm] = useState({ text: "" });
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    try {
+      const savedDoctors = localStorage.getItem("kgNandaDischargeDoctors");
+      if (savedDoctors) {
+        const parsedDocs = JSON.parse(savedDoctors);
+        if (Array.isArray(parsedDocs) && parsedDocs.length) setDoctorList(parsedDocs);
+      }
+    } catch {
+      // Defaults remain active.
+    }
+
+    try {
+      const savedDiagnoses = localStorage.getItem("kgNandaDischargeDiagnoses");
+      if (savedDiagnoses) {
+        const parsed = JSON.parse(savedDiagnoses);
+        if (Array.isArray(parsed) && parsed.length) setDiagnosisList(parsed);
+      }
+    } catch {
+      // Defaults remain active.
+    }
+
+    try {
+      const savedProcedures = localStorage.getItem("kgNandaDischargeProcedures");
+      if (savedProcedures) {
+        const parsed = JSON.parse(savedProcedures);
+        if (Array.isArray(parsed) && parsed.length) setProcedureList(parsed);
+      }
+    } catch {
+      // Defaults remain active.
+    }
+  }, []);
+
+  const persistDoctors = (next) => {
+    setDoctorList(next);
+    try {
+      localStorage.setItem("kgNandaDischargeDoctors", JSON.stringify(next));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const resetDoctorForm = () => {
+    setEditingDoctor(null);
+    setDoctorForm({ name: "", qualification: "" });
+  };
+
+  const saveMasterDoctor = () => {
+    const rawName = String(doctorForm.name || "").trim();
+    if (!rawName) {
+      alert("Doctor name is required.");
+      return;
+    }
+    const name = formatDoctorName(rawName);
+    const qualification = String(doctorForm.qualification || "").trim();
+
+    if (editingDoctor) {
+      const next = doctorList.map((d) =>
+        d.id === editingDoctor.id ? { ...d, name, qualification } : d
+      );
+      persistDoctors(next);
+
+      if (editingDoctor.name !== name) {
+        setPatient((prev) => {
+          const consultants = (prev.consultants || []).map((c) =>
+            c === editingDoctor.name ? name : c
+          );
+          const anaestheticsDoctor =
+            prev.anaestheticsDoctor === editingDoctor.name
+              ? name
+              : prev.anaestheticsDoctor;
+          return {
+            ...prev,
+            consultants,
+            consultantName: consultants.filter(Boolean).join(", "),
+            anaestheticsDoctor,
+          };
+        });
+      }
+    } else {
+      const exists = doctorList.some(
+        (d) => d.name.toLowerCase() === name.toLowerCase()
+      );
+      if (exists) {
+        alert("This doctor is already in the list.");
+        return;
+      }
+      const next = [
+        ...doctorList,
+        {
+          id: Date.now(),
+          name,
+          qualification,
+        },
+      ];
+      persistDoctors(next);
+    }
+    resetDoctorForm();
+  };
+
+  const editMasterDoctor = (doctor) => {
+    setEditingDoctor(doctor);
+    setDoctorForm({
+      name: doctor.name || "",
+      qualification: doctor.qualification || "",
+    });
+  };
+
+  const deleteMasterDoctor = (id) => {
+    const doc = doctorList.find((d) => d.id === id);
+    if (!doc) return;
+    if (!window.confirm(`Delete "${doc.name}" from the doctor list?`)) return;
+    const next = doctorList.filter((d) => d.id !== id);
+    persistDoctors(next);
+  };
+
+  const persistDiagnoses = (next) => {
+    setDiagnosisList(next);
+    try {
+      localStorage.setItem("kgNandaDischargeDiagnoses", JSON.stringify(next));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const resetDiagnosisForm = () => {
+    setEditingDiagnosis(null);
+    setDiagnosisForm({ text: "" });
+  };
+
+  const saveMasterDiagnosis = () => {
+    const text = String(diagnosisForm.text || "").trim().toUpperCase();
+    if (!text) {
+      alert("Diagnosis text is required.");
+      return;
+    }
+
+    if (editingDiagnosis !== null) {
+      const next = diagnosisList.map((item, idx) =>
+        idx === editingDiagnosis ? text : item
+      );
+      persistDiagnoses(next);
+    } else {
+      if (diagnosisList.includes(text)) {
+        alert("This diagnosis already exists in the list.");
+        return;
+      }
+      const next = [text, ...diagnosisList];
+      persistDiagnoses(next);
+    }
+    resetDiagnosisForm();
+  };
+
+  const editMasterDiagnosis = (item, index) => {
+    setEditingDiagnosis(index);
+    setDiagnosisForm({ text: item });
+  };
+
+  const deleteMasterDiagnosis = (index) => {
+    const item = diagnosisList[index];
+    if (!window.confirm(`Delete "${item}" from the diagnosis list?`)) return;
+    const next = diagnosisList.filter((_, idx) => idx !== index);
+    persistDiagnoses(next);
+    if (editingDiagnosis === index) {
+      resetDiagnosisForm();
+    }
+  };
+
+  const persistProcedures = (next) => {
+    setProcedureList(next);
+    try {
+      localStorage.setItem("kgNandaDischargeProcedures", JSON.stringify(next));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const resetProcedureForm = () => {
+    setEditingProcedure(null);
+    setProcedureForm({ text: "" });
+  };
+
+  const saveMasterProcedure = () => {
+    const text = String(procedureForm.text || "").trim().toUpperCase();
+    if (!text) {
+      alert("Procedure text is required.");
+      return;
+    }
+
+    if (editingProcedure !== null) {
+      const next = procedureList.map((item, idx) =>
+        idx === editingProcedure ? text : item
+      );
+      persistProcedures(next);
+    } else {
+      if (procedureList.includes(text)) {
+        alert("This procedure already exists in the list.");
+        return;
+      }
+      const next = [text, ...procedureList];
+      persistProcedures(next);
+    }
+    resetProcedureForm();
+  };
+
+  const editMasterProcedure = (item, index) => {
+    setEditingProcedure(index);
+    setProcedureForm({ text: item });
+  };
+
+  const deleteMasterProcedure = (index) => {
+    const item = procedureList[index];
+    if (!window.confirm(`Delete "${item}" from the procedure list?`)) return;
+    const next = procedureList.filter((_, idx) => idx !== index);
+    persistProcedures(next);
+    if (editingProcedure === index) {
+      resetProcedureForm();
+    }
+  };
 
   const updatePatient = (field, value) => {
     setPatient((prev) => ({ ...prev, [field]: value }));
@@ -467,7 +702,7 @@ export default function DischargeSummaryForm() {
               <div className={styles.lookupInputRow}>
                 <input
                   value={uhid}
-                  onChange={(e) => setUhid(e.target.value)}
+                  onChange={(e) => setUhid(e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                   placeholder="Enter UHID No."
                 />
               </div>
@@ -478,7 +713,7 @@ export default function DischargeSummaryForm() {
               <div className={styles.lookupInputRow}>
                 <input
                   value={bookingNo}
-                  onChange={(e) => setBookingNo(e.target.value)}
+                  onChange={(e) => setBookingNo(e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                   placeholder="Enter Token Number"
                 />
               </div>
@@ -495,7 +730,7 @@ export default function DischargeSummaryForm() {
             <Field label="I.P. / UMR No.">
               <input
                 value={patient.ipUmrNo}
-                onChange={(e) => updatePatient("ipUmrNo", e.target.value)}
+                onChange={(e) => updatePatient("ipUmrNo", e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
               />
             </Field>
 
@@ -522,21 +757,21 @@ export default function DischargeSummaryForm() {
             <Field label="No. of IPD Days">
               <input
                 value={patient.ipdDays || calculateIpdDays}
-                onChange={(e) => updatePatient("ipdDays", e.target.value)}
+                onChange={(e) => updatePatient("ipdDays", e.target.value.replace(/\D/g, '').slice(0, 3))}
               />
             </Field>
 
             <Field label="Ward">
               <input
                 value={patient.ward}
-                onChange={(e) => updatePatient("ward", e.target.value)}
+                onChange={(e) => updatePatient("ward", e.target.value.replace(/[^a-zA-Z0-9\s\-\/]/g, ''))}
               />
             </Field>
 
             <Field label="Bed No.">
               <input
                 value={patient.bedNo}
-                onChange={(e) => updatePatient("bedNo", e.target.value)}
+                onChange={(e) => updatePatient("bedNo", e.target.value.replace(/[^a-zA-Z0-9\s\-\/]/g, ''))}
               />
             </Field>
 
@@ -564,7 +799,7 @@ export default function DischargeSummaryForm() {
               <input
                 value={patient.patientName}
                 onChange={(e) =>
-                  updatePatient("patientName", e.target.value)
+                  updatePatient("patientName", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))
                 }
               />
             </Field>
@@ -573,7 +808,7 @@ export default function DischargeSummaryForm() {
               <input
                 value={patient.fatherHusbandName}
                 onChange={(e) =>
-                  updatePatient("fatherHusbandName", e.target.value)
+                  updatePatient("fatherHusbandName", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))
                 }
               />
             </Field>
@@ -581,7 +816,7 @@ export default function DischargeSummaryForm() {
             <Field label="Age / Date of Birth">
               <input
                 value={patient.ageDob}
-                onChange={(e) => updatePatient("ageDob", e.target.value)}
+                onChange={(e) => updatePatient("ageDob", e.target.value.replace(/[^0-9a-zA-Z\s\-\/]/g, '').slice(0, 15))}
               />
             </Field>
 
@@ -600,7 +835,7 @@ export default function DischargeSummaryForm() {
             <Field label="UHID No.">
               <input
                 value={patient.uhid}
-                onChange={(e) => updatePatient("uhid", e.target.value)}
+                onChange={(e) => updatePatient("uhid", e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
               />
             </Field>
 
@@ -610,7 +845,7 @@ export default function DischargeSummaryForm() {
               <input
                 value={patient.telephone}
                 onChange={(e) =>
-                  updatePatient("telephone", e.target.value)
+                  updatePatient("telephone", e.target.value.replace(/\D/g, '').slice(0, 10))
                 }
               />
             </Field>
@@ -634,33 +869,72 @@ export default function DischargeSummaryForm() {
             <Field label="Address" wide>
               <textarea
                 value={patient.address}
-                onChange={(e) => updatePatient("address", e.target.value)}
+                onChange={(e) => updatePatient("address", e.target.value.replace(/[^a-zA-Z0-9\s,.\-\/#]/g, ''))}
                 rows="2"
               />
             </Field>
 
             <div style={{ gridColumn: "span 2", marginTop: "4px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <span style={{ color: "#244d6f", fontSize: "14.5px", fontWeight: "850" }}>Consultant Doctor Name(s)</span>
-                <button
-                  type="button"
-                  onClick={addConsultant}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                }}
+              >
+                <span
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "5px 12px",
-                    border: "1px solid #a9d7f2",
-                    borderRadius: "7px",
-                    background: "#e0f2fe",
-                    color: "#0284c7",
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    cursor: "pointer",
+                    color: "#244d6f",
+                    fontSize: "14px",
+                    fontWeight: "800",
                   }}
                 >
-                  + Add Consultant
-                </button>
+                  Consultant Doctor Name(s)
+                </span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetDoctorForm();
+                      setShowDoctorManage(true);
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "5px 12px",
+                      border: "1px solid #bae6fd",
+                      borderRadius: "7px",
+                      background: "#f0f9ff",
+                      color: "#0284c7",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Manage Doctors
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addConsultant}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "5px 12px",
+                      border: "1px solid #a9d7f2",
+                      borderRadius: "7px",
+                      background: "#e0f2fe",
+                      color: "#0284c7",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Add Consultant
+                  </button>
+                </div>
               </div>
 
               {(patient.consultants && patient.consultants.length > 0
@@ -695,12 +969,12 @@ export default function DischargeSummaryForm() {
                   >
                     <option value="">Select Consultant Doctor</option>
                     {consultant &&
-                      !DOCTORS.some((d) => d.name === consultant) && (
-                        <option value={consultant}>{consultant}</option>
+                      !doctorList.some((d) => d.name === consultant) && (
+                        <option value={consultant}>{formatDoctorName(consultant)}</option>
                       )}
-                    {DOCTORS.map((doctor) => (
+                    {doctorList.map((doctor) => (
                       <option key={doctor.id} value={doctor.name}>
-                        {doctor.name} — {doctor.qualification}
+                        {formatDoctorName(doctor.name)}{doctor.qualification ? ` — ${doctor.qualification}` : ''}
                       </option>
                     ))}
                   </select>
@@ -730,30 +1004,95 @@ export default function DischargeSummaryForm() {
               ))}
             </div>
 
-            <Field label="Anaesthetics Dr." wide>
-              <div className={styles.doctorSelectWrap}>
+            <div style={{ gridColumn: "span 2", marginTop: "4px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#244d6f",
+                    fontSize: "14px",
+                    fontWeight: "800",
+                  }}
+                >
+                  Anaesthetics Dr.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetDoctorForm();
+                    setShowDoctorManage(true);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "5px 12px",
+                    border: "1px solid #bae6fd",
+                    borderRadius: "7px",
+                    background: "#f0f9ff",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                  }}
+                >
+                  Manage Doctors
+                </button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <select
                   value={patient.anaestheticsDoctor}
                   onChange={(e) =>
                     updatePatient("anaestheticsDoctor", e.target.value)
                   }
                   className={styles.doctorSelect}
+                  style={{ flex: 1 }}
                 >
                   <option value="">Select Anaesthetics Doctor</option>
                   {patient.anaestheticsDoctor &&
-                    !DOCTORS.some((d) => d.name === patient.anaestheticsDoctor) && (
+                    !doctorList.some((d) => d.name === patient.anaestheticsDoctor) && (
                       <option value={patient.anaestheticsDoctor}>
-                        {patient.anaestheticsDoctor}
+                        {formatDoctorName(patient.anaestheticsDoctor)}
                       </option>
                     )}
-                  {DOCTORS.map((doctor) => (
+                  {doctorList.map((doctor) => (
                     <option key={doctor.id} value={doctor.name}>
-                      {doctor.name} — {doctor.qualification}
+                      {formatDoctorName(doctor.name)}{doctor.qualification ? ` — ${doctor.qualification}` : ''}
                     </option>
                   ))}
                 </select>
+
+                {patient.anaestheticsDoctor && (
+                  <button
+                    type="button"
+                    onClick={() => updatePatient("anaestheticsDoctor", "")}
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      border: "1px solid #fee2e2",
+                      borderRadius: "6px",
+                      background: "#fef2f2",
+                      color: "#dc2626",
+                      cursor: "pointer",
+                      display: "grid",
+                      placeItems: "center",
+                      fontWeight: "bold",
+                      fontSize: "15px",
+                    }}
+                    title="Remove / Clear Anaesthetics Doctor"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-            </Field>
+            </div>
           </div>
         </section>
 
@@ -762,6 +1101,29 @@ export default function DischargeSummaryForm() {
             <div className={styles.documentHeading} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
               <span>DIAGNOSIS</span>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetDiagnosisForm();
+                    setShowDiagnosisManage(true);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "5px 12px",
+                    border: "1px solid #bae6fd",
+                    borderRadius: "6px",
+                    background: "#f0f9ff",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    height: "36px",
+                  }}
+                >
+                  Manage Diagnoses
+                </button>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600" }}>Quick Select:</span>
                 <select
                   style={{
@@ -774,6 +1136,7 @@ export default function DischargeSummaryForm() {
                     fontSize: "13px",
                     fontWeight: "600",
                     cursor: "pointer",
+                    maxWidth: "280px",
                   }}
                   onChange={(e) => {
                     if (e.target.value) {
@@ -789,7 +1152,7 @@ export default function DischargeSummaryForm() {
                   defaultValue=""
                 >
                   <option value="" disabled>Select Diagnosis</option>
-                  {DIAGNOSIS_OPTIONS.map((diag, idx) => (
+                  {diagnosisList.map((diag, idx) => (
                     <option key={idx} value={diag}>
                       {diag}
                     </option>
@@ -809,6 +1172,29 @@ export default function DischargeSummaryForm() {
             <div className={styles.documentHeading} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
               <span>PROCEDURE</span>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetProcedureForm();
+                    setShowProcedureManage(true);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "5px 12px",
+                    border: "1px solid #bae6fd",
+                    borderRadius: "6px",
+                    background: "#f0f9ff",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    height: "36px",
+                  }}
+                >
+                  Manage Procedures
+                </button>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600" }}>Quick Select:</span>
                 <select
                   style={{
@@ -821,6 +1207,7 @@ export default function DischargeSummaryForm() {
                     fontSize: "13px",
                     fontWeight: "600",
                     cursor: "pointer",
+                    maxWidth: "280px",
                   }}
                   onChange={(e) => {
                     if (e.target.value) {
@@ -836,7 +1223,7 @@ export default function DischargeSummaryForm() {
                   defaultValue=""
                 >
                   <option value="" disabled>Select Procedure</option>
-                  {PROCEDURE_OPTIONS.map((proc, idx) => (
+                  {procedureList.map((proc, idx) => (
                     <option key={idx} value={proc}>
                       {proc}
                     </option>
@@ -876,7 +1263,7 @@ export default function DischargeSummaryForm() {
             <Field label="Prepared By">
               <input
                 value={form.preparedBy}
-                onChange={(e) => updateForm("preparedBy", e.target.value)}
+                onChange={(e) => updateForm("preparedBy", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))}
                 placeholder="Dr. / Staff Name"
               />
             </Field>
@@ -895,7 +1282,7 @@ export default function DischargeSummaryForm() {
               <input
                 value={form.consultantSignature}
                 onChange={(e) =>
-                  updateForm("consultantSignature", e.target.value)
+                  updateForm("consultantSignature", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))
                 }
                 placeholder="Signature / Name"
               />
@@ -929,6 +1316,246 @@ export default function DischargeSummaryForm() {
           </button>
         </div>
       </main>
+
+      {showDoctorManage && (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={() => setShowDoctorManage(false)}
+        >
+          <div
+            className={styles.modal}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3>Manage Doctors</h3>
+                <p>Add new doctors, edit qualification or remove doctors from the list.</p>
+              </div>
+
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowDoctorManage(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.masterForm}>
+              <input
+                value={doctorForm.name}
+                onChange={(e) =>
+                  setDoctorForm((p) => ({
+                    ...p,
+                    name: e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''),
+                  }))
+                }
+                placeholder="Doctor name e.g. Dr. Ramesh Gupta"
+              />
+
+              <input
+                value={doctorForm.qualification}
+                onChange={(e) =>
+                  setDoctorForm((p) => ({
+                    ...p,
+                    qualification: e.target.value.replace(/[^a-zA-Z0-9\s,.\(\)\-\/&]/g, ''),
+                  }))
+                }
+                placeholder="Qualification e.g. MBBS, MD"
+              />
+
+              <button
+                className={styles.primarySmall}
+                onClick={saveMasterDoctor}
+              >
+                {editingDoctor ? "Update" : "Add"}
+              </button>
+
+              {editingDoctor && (
+                <button
+                  className={styles.cancelSmall}
+                  onClick={resetDoctorForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            <div className={styles.masterList}>
+              {doctorList.map((doctor) => (
+                <div className={styles.masterRow} key={doctor.id}>
+                  <div>
+                    <strong>{formatDoctorName(doctor.name)}</strong>
+                    <span>{doctor.qualification || "No qualification"}</span>
+                  </div>
+
+                  <div className={styles.masterActions}>
+                    <button onClick={() => editMasterDoctor(doctor)}>
+                      Edit
+                    </button>
+
+                    <button
+                      className={styles.dangerText}
+                      onClick={() => deleteMasterDoctor(doctor.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDiagnosisManage && (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={() => setShowDiagnosisManage(false)}
+        >
+          <div
+            className={styles.modal}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3>Manage Diagnoses</h3>
+                <p>Add new diagnoses, edit text or remove items from the quick select list.</p>
+              </div>
+
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowDiagnosisManage(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.masterFormSingle}>
+              <input
+                value={diagnosisForm.text}
+                onChange={(e) =>
+                  setDiagnosisForm({ text: e.target.value })
+                }
+                placeholder="Diagnosis text e.g. ACUTE APPENDICITIS"
+              />
+
+              <button
+                className={styles.primarySmall}
+                onClick={saveMasterDiagnosis}
+              >
+                {editingDiagnosis !== null ? "Update" : "Add"}
+              </button>
+
+              {editingDiagnosis !== null && (
+                <button
+                  className={styles.cancelSmall}
+                  onClick={resetDiagnosisForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            <div className={styles.masterList}>
+              {diagnosisList.map((item, index) => (
+                <div className={styles.masterRow} key={index}>
+                  <div>
+                    <strong>{item}</strong>
+                  </div>
+
+                  <div className={styles.masterActions}>
+                    <button onClick={() => editMasterDiagnosis(item, index)}>
+                      Edit
+                    </button>
+
+                    <button
+                      className={styles.dangerText}
+                      onClick={() => deleteMasterDiagnosis(index)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProcedureManage && (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={() => setShowProcedureManage(false)}
+        >
+          <div
+            className={styles.modal}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3>Manage Procedures</h3>
+                <p>Add new procedures, edit text or remove items from the quick select list.</p>
+              </div>
+
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowProcedureManage(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.masterFormSingle}>
+              <input
+                value={procedureForm.text}
+                onChange={(e) =>
+                  setProcedureForm({ text: e.target.value })
+                }
+                placeholder="Procedure text e.g. LAPAROSCOPIC APPENDECTOMY"
+              />
+
+              <button
+                className={styles.primarySmall}
+                onClick={saveMasterProcedure}
+              >
+                {editingProcedure !== null ? "Update" : "Add"}
+              </button>
+
+              {editingProcedure !== null && (
+                <button
+                  className={styles.cancelSmall}
+                  onClick={resetProcedureForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            <div className={styles.masterList}>
+              {procedureList.map((item, index) => (
+                <div className={styles.masterRow} key={index}>
+                  <div>
+                    <strong>{item}</strong>
+                  </div>
+
+                  <div className={styles.masterActions}>
+                    <button onClick={() => editMasterProcedure(item, index)}>
+                      Edit
+                    </button>
+
+                    <button
+                      className={styles.dangerText}
+                      onClick={() => deleteMasterProcedure(index)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={`${styles.printDocument} printDocument`}>
         <div className={styles.printHeader}>
@@ -1003,16 +1630,16 @@ export default function DischargeSummaryForm() {
                     ? patient.consultants.filter(Boolean)
                     : [patient.consultantName]
                   ).filter(Boolean).map((c, i) => (
-                    <div key={i} style={{ fontWeight: 'bold' }}>
-                      {c.toUpperCase()}
+                    <div key={i} style={{ fontWeight: 'normal' }}>
+                      {formatDoctorName(c).toUpperCase()}
                     </div>
                   ))}
                 </div>
               </div>
               <div style={{ width: '40%' }}>
                 <b>Anaesthetics Dr : </b>
-                <span style={{ fontWeight: 'bold' }}>
-                  {patient.anaestheticsDoctor ? patient.anaestheticsDoctor.toUpperCase() : ''}
+                <span style={{ fontWeight: 'normal' }}>
+                  {patient.anaestheticsDoctor ? formatDoctorName(patient.anaestheticsDoctor).toUpperCase() : ''}
                 </span>
               </div>
             </div>
@@ -1043,12 +1670,24 @@ export default function DischargeSummaryForm() {
         {/* Signatures */}
         <div className={styles.printSignatureRow}>
           <div>
-            <div><b>Prepared by : Dr</b>...........................................................</div>
-            <div><b>Date : </b>........................................................................</div>
+            <div>
+              <b>Prepared by : Dr</b>
+              <span>{form.preparedBy ? ` ${form.preparedBy}` : '...........................................................'}</span>
+            </div>
+            <div>
+              <b>Date : </b>
+              <span>{form.preparedDate ? ` ${formatDate(form.preparedDate)}` : '........................................................................'}</span>
+            </div>
           </div>
           <div>
-            <div><b>Consultant's Signature : </b>...........................................</div>
-            <div><b>Seal : </b>.........................................................................</div>
+            <div>
+              <b>Consultant's Signature : </b>
+              <span>{form.consultantSignature ? ` ${form.consultantSignature}` : '...........................................'}</span>
+            </div>
+            <div>
+              <b>Seal : </b>
+              <span>{form.seal ? ` ${form.seal}` : '.........................................................................'}</span>
+            </div>
           </div>
         </div>
 

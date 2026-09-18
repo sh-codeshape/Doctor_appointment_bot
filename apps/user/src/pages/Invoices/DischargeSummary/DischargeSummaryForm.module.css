@@ -384,6 +384,160 @@
   }
 }
 
+/* Manage Doctors Modal */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7, 30, 50, .45);
+}
+
+.modal {
+  width: min(760px, 100%);
+  max-height: 86vh;
+  overflow: hidden;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, .22);
+}
+
+.modalHeader {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #e4edf3;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: #123d5e;
+  font-size: 19px;
+}
+
+.modalHeader p {
+  margin: 5px 0 0;
+  color: #758ba0;
+  font-size: 12px;
+}
+
+.closeButton {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f5f8;
+  color: #526b80;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.masterForm {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 160px auto auto;
+  gap: 8px;
+  border-bottom: 1px solid #e4edf3;
+  background: #f8fbfd;
+}
+
+.masterFormSingle {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  border-bottom: 1px solid #e4edf3;
+  background: #f8fbfd;
+}
+
+.masterForm input,
+.masterFormSingle input {
+  height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #c8d9e5;
+  border-radius: 7px;
+  padding: 0 12px;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.primarySmall,
+.cancelSmall {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primarySmall {
+  border: 0;
+  background: #087fc1;
+  color: #fff;
+}
+
+.cancelSmall {
+  border: 1px solid #ccdce7;
+  background: #fff;
+  color: #45627c;
+}
+
+.masterList {
+  max-height: 54vh;
+  overflow-y: auto;
+  padding: 8px 20px 20px;
+}
+
+.masterRow {
+  min-height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #edf2f6;
+}
+
+.masterRow > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.masterRow strong {
+  color: #244d6f;
+  font-size: 13px;
+}
+
+.masterRow span {
+  color: #0875ae;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.masterActions {
+  display: flex;
+  gap: 6px;
+}
+
+.masterActions button {
+  padding: 6px 9px;
+  border: 1px solid #d6e4ed;
+  border-radius: 6px;
+  background: #fff;
+  color: #176ca8;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.masterActions .dangerText {
+  color: #b42318;
+  border-color: #efd2d0;
+}
+
 /* =========================
    A4 PRINT
    ========================= */
@@ -605,8 +759,8 @@
 
   .printSectionBody {
     padding-left: 20mm;
-    font-size: 11.5pt;
-    font-weight: 600;
+    font-size: 11pt;
+    font-weight: normal !important;
     line-height: 1.45;
     white-space: pre-wrap;
     color: #000000;
@@ -647,6 +801,10 @@
 
   .printSignatureRow b {
     font-weight: bold;
+  }
+
+  .printSignatureRow span {
+    font-weight: normal;
   }
 
   .printFooter {

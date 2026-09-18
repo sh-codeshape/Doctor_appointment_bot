@@ -3,26 +3,32 @@ import styles from "./HospitalBillForm.module.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+function formatDoctorName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "";
+  return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
+}
+
 const DOCTORS = [
-  { id: 1, name: "Abhinav Katiyar", qualification: "MBBS, DNB" },
-  { id: 2, name: "Anand Prakash Tiwari", qualification: "M.S. (Obs & Gynae)" },
-  { id: 3, name: "Vikram Singh", qualification: "MBBS, MCH" },
-  { id: 4, name: "Arun Kumar Singh", qualification: "MBBS" },
-  { id: 5, name: "Vishwanath Pratap Singh", qualification: "MBBS, MS" },
-  { id: 6, name: "Pankaj Kumar Singh", qualification: "MBBS, MS" },
-  { id: 7, name: "Sushil Krishna Murti", qualification: "MBBS, MD" },
-  { id: 8, name: "Mrityunjay Prasad", qualification: "MS (Shalya)" },
-  { id: 9, name: "Ankit Kumar Singh", qualification: "MBBS" },
-  { id: 10, name: "Prabhunath Dubey", qualification: "BMS, PGDNC" },
-  { id: 11, name: "Abhinav Mishra", qualification: "MBBS, MS (ENT)" },
-  { id: 12, name: "Yogesh Kumar Pandey", qualification: "MS (Shalya)" },
-  { id: 13, name: "Akhilesh Kumar Singh", qualification: "BAMS (RMO)" },
-  { id: 14, name: "Niket Raj Garg", qualification: "MBBS, MS" },
-  { id: 15, name: "Dilip Kumar Gupta", qualification: "MBBS, DCH" },
-  { id: 16, name: "Parvez Ahmad", qualification: "BAMS, MD" },
-  { id: 17, name: "Umesh Kumar Maurya", qualification: "MBBS" },
-  { id: 18, name: "Shobha Jaiswal", qualification: "MBBS, MS (Obs & Gynae)" },
-  { id: 19, name: "Sadhna Chaurasiya", qualification: "MBBS, DGO" },
+  { id: 1, name: "Dr. Abhinav Katiyar", qualification: "MBBS, DNB" },
+  { id: 2, name: "Dr. Anand Prakash Tiwari", qualification: "M.S. (Obs & Gynae)" },
+  { id: 3, name: "Dr. Vikram Singh", qualification: "MBBS, MCH" },
+  { id: 4, name: "Dr. Arun Kumar Singh", qualification: "MBBS" },
+  { id: 5, name: "Dr. Vishwanath Pratap Singh", qualification: "MBBS, MS" },
+  { id: 6, name: "Dr. Pankaj Kumar Singh", qualification: "MBBS, MS" },
+  { id: 7, name: "Dr. Sushil Krishna Murti", qualification: "MBBS, MD" },
+  { id: 8, name: "Dr. Mrityunjay Prasad", qualification: "MS (Shalya)" },
+  { id: 9, name: "Dr. Ankit Kumar Singh", qualification: "MBBS" },
+  { id: 10, name: "Dr. Prabhunath Dubey", qualification: "BMS, PGDNC" },
+  { id: 11, name: "Dr. Abhinav Mishra", qualification: "MBBS, MS (ENT)" },
+  { id: 12, name: "Dr. Yogesh Kumar Pandey", qualification: "MS (Shalya)" },
+  { id: 13, name: "Dr. Akhilesh Kumar Singh", qualification: "BAMS (RMO)" },
+  { id: 14, name: "Dr. Niket Raj Garg", qualification: "MBBS, MS" },
+  { id: 15, name: "Dr. Dilip Kumar Gupta", qualification: "MBBS, DCH" },
+  { id: 16, name: "Dr. Parvez Ahmad", qualification: "BAMS, MD" },
+  { id: 17, name: "Dr. Umesh Kumar Maurya", qualification: "MBBS" },
+  { id: 18, name: "Dr. Shobha Jaiswal", qualification: "MBBS, MS (Obs & Gynae)" },
+  { id: 19, name: "Dr. Sadhna Chaurasiya", qualification: "MBBS, DGO" },
 ];
 
 const DEFAULT_PARTICULARS = [
@@ -131,12 +137,13 @@ function normalizePatient(data = {}) {
     data.doctor ||
     "";
 
-  const consultantsList = Array.isArray(data.consultants)
+  const consultantsList = (Array.isArray(data.consultants)
     ? data.consultants
     : consultantVal
         .split(/[,/]+/)
         .map((s) => s.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+  ).map((c) => formatDoctorName(c));
 
   return {
     ...emptyPatient,
@@ -184,7 +191,7 @@ function normalizePatient(data = {}) {
       data.dateOfDischarge ||
       data.discharge_date ||
       "",
-    consultantName: consultantVal,
+    consultantName: consultantVal ? formatDoctorName(consultantVal) : "",
     consultants: consultantsList.length ? consultantsList : [""],
   };
 }
@@ -197,6 +204,10 @@ export default function HospitalBillForm() {
   const [patient, setPatient] = useState(emptyPatient);
   const [items, setItems] = useState([newRow()]);
   const [particulars, setParticulars] = useState(DEFAULT_PARTICULARS);
+  const [doctorList, setDoctorList] = useState(DOCTORS);
+  const [showDoctorManage, setShowDoctorManage] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState(null);
+  const [doctorForm, setDoctorForm] = useState({ name: "", qualification: "" });
   const [showManage, setShowManage] = useState(false);
   const [editingParticular, setEditingParticular] = useState(null);
   const [masterForm, setMasterForm] = useState({ name: "", charge: "" });
@@ -204,10 +215,20 @@ export default function HospitalBillForm() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("kgNandaBillParticulars");
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedParticulars = localStorage.getItem("kgNandaBillParticulars");
+      if (savedParticulars) {
+        const parsed = JSON.parse(savedParticulars);
         if (Array.isArray(parsed) && parsed.length) setParticulars(parsed);
+      }
+    } catch {
+      // Defaults remain active.
+    }
+
+    try {
+      const savedDoctors = localStorage.getItem("kgNandaBillDoctors");
+      if (savedDoctors) {
+        const parsedDocs = JSON.parse(savedDoctors);
+        if (Array.isArray(parsedDocs) && parsedDocs.length) setDoctorList(parsedDocs);
       }
     } catch {
       // Defaults remain active.
@@ -217,6 +238,84 @@ export default function HospitalBillForm() {
   const persistParticulars = (next) => {
     setParticulars(next);
     localStorage.setItem("kgNandaBillParticulars", JSON.stringify(next));
+  };
+
+  const persistDoctors = (next) => {
+    setDoctorList(next);
+    try {
+      localStorage.setItem("kgNandaBillDoctors", JSON.stringify(next));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const resetDoctorForm = () => {
+    setEditingDoctor(null);
+    setDoctorForm({ name: "", qualification: "" });
+  };
+
+  const saveMasterDoctor = () => {
+    const rawName = String(doctorForm.name || "").trim();
+    if (!rawName) {
+      alert("Doctor name is required.");
+      return;
+    }
+    const name = formatDoctorName(rawName);
+    const qualification = String(doctorForm.qualification || "").trim();
+
+    if (editingDoctor) {
+      const next = doctorList.map((d) =>
+        d.id === editingDoctor.id ? { ...d, name, qualification } : d
+      );
+      persistDoctors(next);
+
+      if (editingDoctor.name !== name) {
+        setPatient((prev) => {
+          const consultants = (prev.consultants || []).map((c) =>
+            c === editingDoctor.name ? name : c
+          );
+          return {
+            ...prev,
+            consultants,
+            consultantName: consultants.filter(Boolean).join(", "),
+          };
+        });
+      }
+    } else {
+      const exists = doctorList.some(
+        (d) => d.name.toLowerCase() === name.toLowerCase()
+      );
+      if (exists) {
+        alert("This doctor is already in the list.");
+        return;
+      }
+      const next = [
+        ...doctorList,
+        {
+          id: Date.now(),
+          name,
+          qualification,
+        },
+      ];
+      persistDoctors(next);
+    }
+    resetDoctorForm();
+  };
+
+  const editMasterDoctor = (doctor) => {
+    setEditingDoctor(doctor);
+    setDoctorForm({
+      name: doctor.name || "",
+      qualification: doctor.qualification || "",
+    });
+  };
+
+  const deleteMasterDoctor = (id) => {
+    const doc = doctorList.find((d) => d.id === id);
+    if (!doc) return;
+    if (!window.confirm(`Delete "${doc.name}" from the doctor list?`)) return;
+    const next = doctorList.filter((d) => d.id !== id);
+    persistDoctors(next);
   };
 
   const total = useMemo(
@@ -559,7 +658,7 @@ export default function HospitalBillForm() {
               <div className={styles.lookupInputRow}>
                 <input
                   value={uhidSearch}
-                  onChange={(e) => setUhidSearch(e.target.value)}
+                  onChange={(e) => setUhidSearch(e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                   placeholder="Enter UHID No."
                 />
               </div>
@@ -570,7 +669,7 @@ export default function HospitalBillForm() {
               <div className={styles.lookupInputRow}>
                 <input
                   value={bookingSearch}
-                  onChange={(e) => setBookingSearch(e.target.value)}
+                  onChange={(e) => setBookingSearch(e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
                   placeholder="Enter Token Number"
                 />
               </div>
@@ -594,15 +693,17 @@ export default function HospitalBillForm() {
               <input
                 value={patient.patientName}
                 onChange={(e) =>
-                  updatePatient("patientName", e.target.value)
+                  updatePatient("patientName", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))
                 }
+                placeholder="e.g. Mr Surendra Agrahari"
               />
             </Field>
 
             <Field label="Age (Y-M-D)">
               <input
                 value={patient.age}
-                onChange={(e) => updatePatient("age", e.target.value)}
+                onChange={(e) => updatePatient("age", e.target.value.replace(/[^0-9a-zA-Z\s\-\/]/g, '').slice(0, 15))}
+                placeholder="e.g. 35Y / 35"
               />
             </Field>
 
@@ -621,7 +722,8 @@ export default function HospitalBillForm() {
             <Field label="UHID No.">
               <input
                 value={patient.uhid}
-                onChange={(e) => updatePatient("uhid", e.target.value)}
+                onChange={(e) => updatePatient("uhid", e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
+                placeholder="UHID No."
               />
             </Field>
 
@@ -630,7 +732,8 @@ export default function HospitalBillForm() {
             <Field label="Hospital / IPD No.">
               <input
                 value={patient.hospitalNo}
-                onChange={(e) => updatePatient("hospitalNo", e.target.value)}
+                onChange={(e) => updatePatient("hospitalNo", e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
+                placeholder="IPD No."
               />
             </Field>
 
@@ -638,29 +741,33 @@ export default function HospitalBillForm() {
               <input
                 value={patient.relativeName}
                 onChange={(e) =>
-                  updatePatient("relativeName", e.target.value)
+                  updatePatient("relativeName", e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''))
                 }
+                placeholder="Father's / Husband's / Relative Name"
               />
             </Field>
 
             <Field label="Relative Contact No.">
               <input
                 value={patient.mobile}
-                onChange={(e) => updatePatient("mobile", e.target.value)}
+                onChange={(e) => updatePatient("mobile", e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="10 digit contact number"
               />
             </Field>
 
             <Field label="Patient Address" wide>
               <input
                 value={patient.address}
-                onChange={(e) => updatePatient("address", e.target.value)}
+                onChange={(e) => updatePatient("address", e.target.value.replace(/[^a-zA-Z0-9\s,.\-\/#]/g, ''))}
+                placeholder="Patient Address"
               />
             </Field>
 
             <Field label="Bill No.">
               <input
                 value={patient.billNo}
-                onChange={(e) => updatePatient("billNo", e.target.value)}
+                onChange={(e) => updatePatient("billNo", e.target.value.replace(/[^a-zA-Z0-9\-\/]/g, ''))}
+                placeholder="Bill No."
               />
             </Field>
 
@@ -695,25 +802,49 @@ export default function HospitalBillForm() {
             <div style={{ gridColumn: 'span 4', marginTop: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ color: '#244d6f', fontSize: '14.5px', fontWeight: '850' }}>Consultant / Doctor Name(s)</span>
-                <button
-                  type="button"
-                  onClick={addConsultant}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '6px 14px',
-                    border: '1px solid #a9d7f2',
-                    borderRadius: '7px',
-                    background: '#e0f2fe',
-                    color: '#0284c7',
-                    fontSize: '12.5px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Add Consultant
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetDoctorForm();
+                      setShowDoctorManage(true);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 14px',
+                      border: '1px solid #bae6fd',
+                      borderRadius: '7px',
+                      background: '#f0f9ff',
+                      color: '#0284c7',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Manage Doctors
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addConsultant}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 14px',
+                      border: '1px solid #a9d7f2',
+                      borderRadius: '7px',
+                      background: '#e0f2fe',
+                      color: '#0284c7',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Add Consultant
+                  </button>
+                </div>
               </div>
 
               {(patient.consultants && patient.consultants.length > 0
@@ -757,12 +888,12 @@ export default function HospitalBillForm() {
                   >
                     <option value="">Select Doctor</option>
                     {consultant &&
-                      !DOCTORS.some((d) => d.name === consultant) && (
-                        <option value={consultant}>{consultant}</option>
+                      !doctorList.some((d) => d.name === consultant) && (
+                        <option value={consultant}>{formatDoctorName(consultant)}</option>
                       )}
-                    {DOCTORS.map((doctor) => (
+                    {doctorList.map((doctor) => (
                       <option key={doctor.id} value={doctor.name}>
-                        {doctor.name} — {doctor.qualification}
+                        {formatDoctorName(doctor.name)}{doctor.qualification ? ` — ${doctor.qualification}` : ''}
                       </option>
                     ))}
                   </select>
@@ -954,6 +1085,96 @@ export default function HospitalBillForm() {
         </div>
       </main>
 
+      {showDoctorManage && (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={() => setShowDoctorManage(false)}
+        >
+          <div
+            className={styles.modal}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3>Manage Doctors</h3>
+                <p>Add new doctors, edit qualification or remove doctors from the list.</p>
+              </div>
+
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowDoctorManage(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.masterForm}>
+              <input
+                value={doctorForm.name}
+                onChange={(e) =>
+                  setDoctorForm((p) => ({
+                    ...p,
+                    name: e.target.value.replace(/[^a-zA-Z\s\.\-]/g, ''),
+                  }))
+                }
+                placeholder="Doctor name e.g. Dr. Ramesh Gupta"
+              />
+
+              <input
+                value={doctorForm.qualification}
+                onChange={(e) =>
+                  setDoctorForm((p) => ({
+                    ...p,
+                    qualification: e.target.value.replace(/[^a-zA-Z0-9\s,.\(\)\-\/&]/g, ''),
+                  }))
+                }
+                placeholder="Qualification e.g. MBBS, MD"
+              />
+
+              <button
+                className={styles.primarySmall}
+                onClick={saveMasterDoctor}
+              >
+                {editingDoctor ? "Update" : "Add"}
+              </button>
+
+              {editingDoctor && (
+                <button
+                  className={styles.cancelSmall}
+                  onClick={resetDoctorForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            <div className={styles.masterList}>
+              {doctorList.map((doctor) => (
+                <div className={styles.masterRow} key={doctor.id}>
+                  <div>
+                    <strong>{formatDoctorName(doctor.name)}</strong>
+                    <span>{doctor.qualification || "No qualification"}</span>
+                  </div>
+
+                  <div className={styles.masterActions}>
+                    <button onClick={() => editMasterDoctor(doctor)}>
+                      Edit
+                    </button>
+
+                    <button
+                      className={styles.dangerText}
+                      onClick={() => deleteMasterDoctor(doctor.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showManage && (
         <div
           className={styles.modalBackdrop}
@@ -1132,8 +1353,11 @@ export default function HospitalBillForm() {
               <td>
                 <b>Consultant Name :</b>{" "}
                 {(patient.consultants || []).filter(Boolean).length
-                  ? (patient.consultants || []).filter(Boolean).join(", ")
-                  : patient.consultantName}
+                  ? (patient.consultants || [])
+                      .filter(Boolean)
+                      .map((c) => formatDoctorName(c))
+                      .join(", ")
+                  : formatDoctorName(patient.consultantName)}
               </td>
             </tr>
           </tbody>
