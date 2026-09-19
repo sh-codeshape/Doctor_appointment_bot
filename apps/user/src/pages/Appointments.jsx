@@ -236,29 +236,50 @@ export default function Appointments() {
   )
 
   const handleExportCSV = () => {
-    const headers = ['Booking ID', 'Patient Name', 'Mobile', 'Doctor', 'Service', 'Date', 'Status', 'Patient Type']
+    const headers = [
+      'UHID',
+      'Token Number',
+      'Patient Name',
+      'Mobile Number',
+      'Date',
+      'Status',
+      'Patient Type',
+      'Appointment Date',
+      'Created At',
+    ]
     const csvRows = [headers.join(',')]
 
     bookings.forEach((b) => {
+      const uhid = b.uhid || b.patient_uhid || b.patientId?.uhid || ''
+      const tokenNum = b.token_number || b.tokenNumber || ''
+      const patientName = b.patient_name || b.patientId?.name || ''
+      const mobileNum = b.mobile || b.patient_phone || b.patientId?.phone || ''
+      const dateVal = (b.date || b.preferredDate) ? new Date(b.date || b.preferredDate).toLocaleDateString('en-IN') : ''
+      const statusVal = b.status || ''
+      const patientType = (b.is_old || b.isOld) ? 'Old Patient' : 'New Patient'
+      const visitDate = (b.date || b.preferredDate) ? new Date(b.date || b.preferredDate).toLocaleDateString('en-IN') : ''
+      const createdAt = (b.createdAt || b.created_at) ? new Date(b.createdAt || b.created_at).toLocaleString('en-IN') : ''
+
       csvRows.push(
         [
-          `"${b.booking_id}"`,
-          `"${b.patient_name}"`,
-          `"${b.mobile}"`,
-          `"${b.doctor_name || ''}"`,
-          `"${b.service_name || ''}"`,
-          `"${b.date ? new Date(b.date).toLocaleDateString() : ''}"`,
-          `"${b.status}"`,
-          `"${(b.is_old || b.isOld) ? 'Old Patient' : 'New Patient'}"`,
+          `"${uhid}"`,
+          `"${tokenNum}"`,
+          `"${patientName}"`,
+          `"${mobileNum}"`,
+          `"${dateVal}"`,
+          `"${statusVal}"`,
+          `"${patientType}"`,
+          `"${visitDate}"`,
+          `"${createdAt}"`,
         ].join(',')
       )
     })
 
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `bookings-${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `opd-appointments-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     toast.success('Bookings exported to CSV')
   }

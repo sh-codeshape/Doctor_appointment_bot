@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Eye, Edit, CheckCircle, XCircle, BedDouble, Printer, RotateCcw } from 'lucide-react'
+import { Search, Eye, Edit, CheckCircle, XCircle, BedDouble, Printer, RotateCcw, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Card from '../components/common/Card'
 import PageHeader from '../components/common/PageHeader'
@@ -48,6 +48,57 @@ export default function Hospitalization() {
     queryFn: () => bookingService.getBookings({ type: 'HOSPITALIZATION', page, limit, search, date: dateFilter, status: statusFilter, isOld: patientTypeFilter, sortBy: 'preferredDate', sortOrder: 'desc' }),
     refetchInterval: isMockMode() ? false : 30000,
   })
+
+  // Export CSV handler
+  const handleExportCSV = () => {
+    const headers = [
+      'UHID',
+      'Token Number',
+      'Patient Name',
+      'Mobile Number',
+      'Date',
+      'Status',
+      'Patient Type',
+      'Appointment Date',
+      'Created At',
+    ]
+    const csvRows = [headers.join(',')]
+
+    const reqs = response?.data || []
+    reqs.forEach((b) => {
+      const uhid = b.uhid || b.patient_uhid || b.patientId?.uhid || ''
+      const tokenNum = b.token_number || b.tokenNumber || ''
+      const patientName = b.patient_name || b.patientId?.name || ''
+      const mobileNum = b.mobile || b.patient_phone || b.patientId?.phone || ''
+      const dateVal = (b.date || b.preferredDate) ? new Date(b.date || b.preferredDate).toLocaleDateString('en-IN') : ''
+      const statusVal = b.status || ''
+      const patientType = (b.is_old || b.isOld) ? 'Old Patient' : 'New Patient'
+      const visitDate = (b.date || b.preferredDate) ? new Date(b.date || b.preferredDate).toLocaleDateString('en-IN') : ''
+      const createdAt = (b.createdAt || b.created_at) ? new Date(b.createdAt || b.created_at).toLocaleString('en-IN') : ''
+
+      csvRows.push(
+        [
+          `"${uhid}"`,
+          `"${tokenNum}"`,
+          `"${patientName}"`,
+          `"${mobileNum}"`,
+          `"${dateVal}"`,
+          `"${statusVal}"`,
+          `"${patientType}"`,
+          `"${visitDate}"`,
+          `"${createdAt}"`,
+        ].join(',')
+      )
+    })
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `hospitalization-requests-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    toast.success('Hospitalization requests exported to CSV')
+  }
 
   // Mutation
   const statusMutation = useMutation({
@@ -314,11 +365,16 @@ export default function Hospitalization() {
             <option value={50}>50 rows</option>
             <option value={100}>100 rows</option>
           </select>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
             {dateFilter
               ? `${response?.total ?? 0} patient${(response?.total ?? 0) === 1 ? '' : 's'} · ${formatDate(dateFilter)} · newest first`
               : `${response?.total ?? 0} patients · all dates · newest first`}
           </span>
+          <Button variant="secondary" icon={Download} size="sm" onClick={handleExportCSV}>
+            Export CSV
+          </Button>
         </div>
       </div>
 

@@ -45,6 +45,8 @@ function mapBooking(row) {
     patient_name: row.patient_name || '',
     patient_phone: row.patient_phone || '',
     mobile: row.patient_phone || '',
+    patient_uhid: row.patient_uhid !== null && row.patient_uhid !== undefined ? String(row.patient_uhid) : '',
+    uhid: row.patient_uhid !== null && row.patient_uhid !== undefined ? String(row.patient_uhid) : '',
     doctor_name: row.doctor_name || '',
     doctor_specialization: row.department_name || '',
     consultation_fee: doctorFee,
