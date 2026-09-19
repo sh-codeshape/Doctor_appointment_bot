@@ -561,6 +561,26 @@ class BookingRepository {
       return 0
     }
   }
+
+  async hasBookingForPatientOnDate(patientId, targetDate) {
+    const coercedPatientId = toObjectIdString(patientId)
+    if (!coercedPatientId || !targetDate) return false
+    const d = new Date(targetDate)
+    if (isNaN(d.getTime())) return false
+    const dateStr = d.toISOString().slice(0, 10)
+    try {
+      const [row] = await sql`
+        SELECT id FROM bookings
+        WHERE patient_id = ${coercedPatientId}
+          AND status != 'cancelled'
+          AND appointment_date::date = ${dateStr}::date
+        LIMIT 1
+      `
+      return Boolean(row)
+    } catch (e) {
+      return false
+    }
+  }
 }
 
 export default new BookingRepository()

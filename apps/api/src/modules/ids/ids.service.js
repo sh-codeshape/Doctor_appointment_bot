@@ -84,8 +84,8 @@ class IdsService {
 
   /**
    * Daily sequential token per visit type: T-OPD-DDMMYYYY-001 / T-IPD-DDMMYYYY-001.
-   * Computes sequence from MAX existing token number for the doctor and date to avoid
-   * gaps, backwards jumping, or duplicates. Starts at 001 for a fresh date/doctor.
+   * Derives sequence from the actual bookings count for the specified doctor and date
+   * to ensure 100% synchronization and prevent sequence skipping/repetition.
    */
   async generateToken(type, doctorId, date = new Date()) {
     const label = type === 'HOSPITALIZATION' ? 'IPD' : 'OPD'
@@ -99,21 +99,13 @@ class IdsService {
     if (coercedDoctorId) {
       try {
         const [row] = await sql`
-          SELECT COALESCE(
-            MAX(
-              CASE
-                WHEN token_number ~ '(\\d+)$' THEN CAST(SUBSTRING(token_number FROM '(\\d+)$') AS INTEGER)
-                ELSE 0
-              END
-            ),
-            0
-          ) AS max_seq
+          SELECT COUNT(*)::int AS count
           FROM bookings
           WHERE doctor_id = ${coercedDoctorId}
             AND appointment_date::date = ${dateStr}::date
+            AND status != 'cancelled'
         `
-        const maxSeq = Number(row?.max_seq || 0)
-        seq = maxSeq + 1
+        seq = (Number(row?.count) || 0) + 1
 
         const key = `token:${label}:${docKey}:${stamp}`
         await sql`

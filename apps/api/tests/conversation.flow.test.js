@@ -347,4 +347,18 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('OPD_DOCTOR')
     expect(stateStore[PHONE].stateData.visitNumber).toBe(12)
   })
+
+  it('rejects booking when patient already has a booking on the preferred date', async () => {
+    patientService.registerPatientWithBooking.mockRejectedValueOnce(
+      new (await import('../src/middleware/errorHandler.js')).AppError('Patient already has a booking for this appointment date. Maximum 1 request per day is allowed.', 400)
+    )
+
+    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
+    await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('Jaunpur')
+    await send('Civil Lines'); await send('232104'); await send('Fever')
+    const reply = await send('1') // Confirm
+
+    expect(reply).toContain('Booking Limit Reached')
+    expect(stateStore[PHONE].currentStep).toBe('WELCOME')
+  })
 })

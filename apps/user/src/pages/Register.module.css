@@ -293,3 +293,19 @@
   .ticketRows > div { grid-template-columns: 100px 1fr; }
   .datePresets { flex-direction: column; }
 }
+
+.redErrorBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+  line-height: 1.4;
+}

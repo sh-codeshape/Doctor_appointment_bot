@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import {
   User, Phone, CalendarCheck, ClipboardCheck,
-  CheckCircle, ChevronLeft, ChevronRight, Edit,
+  CheckCircle, ChevronLeft, ChevronRight, Edit, AlertCircle,
 } from 'lucide-react'
 import { registrationService } from '../services/registrationService'
 import { bookingService } from '../services/bookingService'
@@ -98,6 +98,7 @@ export default function Register() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [serverError, setServerError] = useState(null)
 
   const { data: rawDoctors = [] } = useQuery({
     queryKey: ['doctors'],
@@ -219,6 +220,7 @@ export default function Register() {
     }
     setForm((f) => ({ ...f, [key]: value, ...(key === 'departmentId' ? { doctorId: '' } : {}) }))
     setFieldErrors((errs) => ({ ...errs, [key]: undefined }))
+    setServerError(null)
   }
 
   const copyToClipboard = (text, label) => {
@@ -235,11 +237,13 @@ export default function Register() {
       toast.error('Please fix the highlighted fields')
       return
     }
+    setServerError(null)
     setStep((s) => Math.min(s + 1, STEPS.length - 1))
   }
 
   const back = () => {
     setFieldErrors({})
+    setServerError(null)
     setStep((s) => Math.max(s - 1, 0))
   }
 
@@ -250,6 +254,7 @@ export default function Register() {
       return
     }
     setSubmitting(true)
+    setServerError(null)
     try {
       const payload = {
         ...form,
@@ -275,7 +280,9 @@ export default function Register() {
       const uhidVal = res.patient?.uhid || res.uhid || ''
       toast.success('Registration complete' + (uhidVal ? ' — UHID ' + uhidVal : ''))
     } catch (err) {
-      toast.error(err.message || 'Registration failed')
+      const errorMsg = err.message || 'Registration failed'
+      setServerError(errorMsg)
+      toast.error(errorMsg)
     } finally {
       setSubmitting(false)
     }
@@ -284,6 +291,7 @@ export default function Register() {
   const resetAll = () => {
     setForm(EMPTY)
     setFieldErrors({})
+    setServerError(null)
     setStep(0)
     setResult(null)
   }
@@ -560,6 +568,13 @@ export default function Register() {
             </div>
           )}
         </div>
+
+        {serverError && (
+          <div className={styles.redErrorBanner}>
+            <AlertCircle size={20} style={{ flexShrink: 0 }} />
+            <span>{serverError}</span>
+          </div>
+        )}
 
         {/* ── Wizard footer ── */}
         <div className={styles.wizardFoot}>

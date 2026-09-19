@@ -429,40 +429,48 @@ export const opdHandler = {
       return service.sendMessage(phone, MESSAGES.doctorUnavailable())
     }
 
-    const { patient, booking } = await patientService.registerPatientWithBooking(
-      {
-        phone,
+    try {
+      const { patient, booking } = await patientService.registerPatientWithBooking(
+        {
+          phone,
+          name: state.tempName,
+          age: state.tempAge,
+          gender: state.tempGender,
+          isOld: state.stateData.isOld,
+          district: state.stateData.district,
+          address: state.stateData.address,
+          pinCode: state.stateData.pinCode || '',
+          doctorId: state.selectedDoctorId,
+          departmentId: state.stateData.departmentId,
+          serviceId: state.selectedServiceId || null,
+          preferredDate: state.selectedDate,
+          problemDescription: state.stateData.problem,
+          type: 'OPD',
+          category: state.stateData?.category || '',
+          visitNumber: state.stateData?.visitNumber || null,
+        },
+        { source: 'whatsapp' },
+        { validate: false }
+      )
+
+      const doctor = await doctorService.getDoctorById(state.selectedDoctorId)
+
+      await service.sendMessage(phone, MESSAGES.appointmentConfirmed({
+        tokenNumber: booking.tokenNumber,
+        uhid: patient.uhid || 'KGN-NEW',
+        doctorName: doctor.name,
+        date: state.stateData.dateStr,
         name: state.tempName,
-        age: state.tempAge,
-        gender: state.tempGender,
-        isOld: state.stateData.isOld,
-        district: state.stateData.district,
-        address: state.stateData.address,
-        pinCode: state.stateData.pinCode || '',
-        doctorId: state.selectedDoctorId,
-        departmentId: state.stateData.departmentId,
-        serviceId: state.selectedServiceId || null,
-        preferredDate: state.selectedDate,
-        problemDescription: state.stateData.problem,
-        type: 'OPD',
-        category: state.stateData?.category || '',
-        visitNumber: state.stateData?.visitNumber || null,
-      },
-      { source: 'whatsapp' },
-      { validate: false }
-    )
+        mobile: phone
+      }))
 
-    const doctor = await doctorService.getDoctorById(state.selectedDoctorId)
-
-    await service.sendMessage(phone, MESSAGES.appointmentConfirmed({
-      tokenNumber: booking.tokenNumber,
-      uhid: patient.uhid || 'KGN-NEW',
-      doctorName: doctor.name,
-      date: state.stateData.dateStr,
-      name: state.tempName,
-      mobile: phone
-    }))
-
-    await conversationRepo.resetState(phone)
+      await conversationRepo.resetState(phone)
+    } catch (err) {
+      if (err.message && err.message.includes('already has a booking')) {
+        await conversationRepo.resetState(phone)
+        return service.sendMessage(phone, MESSAGES.dailyBookingLimitExceeded())
+      }
+      throw err
+    }
   },
 }

@@ -264,6 +264,9 @@ export const MESSAGES = {
   email: () =>
     `📧 *Email Help / ईमेल सहायता*\n\n*For email assistance, contact us at:*\n📧 admin@kgnandahospital.com\n\n0️⃣ Main Menu`,
 
+  dailyBookingLimitExceeded: (uhid = '') =>
+    `❌ *Booking Limit Reached / बुक सीमा पूरी*\n\n*A booking already exists for this patient${uhid ? ` (UHID: ${uhid})` : ''} on this date. Only 1 request per patient is allowed per day.*\nइस मरीज${uhid ? ` (UHID: ${uhid})` : ''} का इस तारीख के लिए पहले से अपॉइंटमेंट दर्ज है। एक मरीज के लिए प्रतिदिन केवल 1 अनुरोध की अनुमति है।\n\n0️⃣ Main Menu`,
+
   invalidInput: () =>
     `❌ Invalid input. Please try again or type "menu".\nगलत इनपुट। कृपया पुनः प्रयास करें।`,
 

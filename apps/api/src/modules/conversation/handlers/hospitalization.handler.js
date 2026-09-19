@@ -145,28 +145,36 @@ export const hospitalizationHandler = {
     }
     if (input !== '1') return service.sendMessage(phone, MESSAGES.invalidInput())
 
-    const { patient, booking } = await patientService.registerPatientWithBooking(
-      {
-        phone,
-        name: state.tempName,
-        age: state.tempAge,
-        gender: state.tempGender,
-        isOld: state.stateData.isOld,
-        district: state.stateData.district,
-        address: state.stateData.address,
-        pinCode: state.stateData.pinCode || '',
-        preferredDate: state.selectedDate,
-        problemDescription: state.stateData.problem,
-        type: 'HOSPITALIZATION',
-      },
-      { source: 'whatsapp' },
-      { validate: false }
-    )
+    try {
+      const { patient, booking } = await patientService.registerPatientWithBooking(
+        {
+          phone,
+          name: state.tempName,
+          age: state.tempAge,
+          gender: state.tempGender,
+          isOld: state.stateData.isOld,
+          district: state.stateData.district,
+          address: state.stateData.address,
+          pinCode: state.stateData.pinCode || '',
+          preferredDate: state.selectedDate,
+          problemDescription: state.stateData.problem,
+          type: 'HOSPITALIZATION',
+        },
+        { source: 'whatsapp' },
+        { validate: false }
+      )
 
-    await service.sendMessage(phone, MESSAGES.hospDone({
-      uhid: patient?.uhid || 'KGN-NEW',
-      tokenNumber: booking?.tokenNumber || 'HOSP-001'
-    }))
-    await conversationRepo.resetState(phone)
+      await service.sendMessage(phone, MESSAGES.hospDone({
+        uhid: patient?.uhid || 'KGN-NEW',
+        tokenNumber: booking?.tokenNumber || 'HOSP-001'
+      }))
+      await conversationRepo.resetState(phone)
+    } catch (err) {
+      if (err.message && err.message.includes('already has a booking')) {
+        await conversationRepo.resetState(phone)
+        return service.sendMessage(phone, MESSAGES.dailyBookingLimitExceeded())
+      }
+      throw err
+    }
   },
 }
