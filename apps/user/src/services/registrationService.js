@@ -89,6 +89,13 @@ export const registrationService = {
       await new Promise((r) => setTimeout(r, MOCK_DELAY))
       const phoneDigits = digitsOnly(data.phone).slice(-10)
       const uhid = mockUhidForPhoneAndName(phoneDigits, data.name)
+
+      const existingBooking = mockBookings.find(
+        (b) => b.uhid === uhid && b.date === data.preferredDate && b.status !== 'cancelled'
+      )
+      if (existingBooking) {
+        throw new Error(`Patient (UHID: ${uhid}) already has a booking for this appointment date (${data.preferredDate}). Maximum 1 request per day is allowed.`)
+      }
       const doctor = mockDoctors.find((d) => d.id === Number(data.doctorId))
       const type = data.type === 'HOSPITALIZATION' ? 'HOSPITALIZATION' : 'OPD'
       const token = type === 'OPD' ? mockTokenFor(data.doctorId, data.preferredDate) : null

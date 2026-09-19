@@ -1,6 +1,7 @@
 import sql from '../../config/database.js'
 import patientRepo from './patient.repository.js'
 import bookingService from '../booking/booking.service.js'
+import bookingRepo from '../booking/booking.repository.js'
 import idsService from '../ids/ids.service.js'
 import { normalizePhone } from '../../utils/phone.js'
 import { toGender, validateRegistration, toObjectIdString } from '../../utils/registration.js'
@@ -101,6 +102,13 @@ class PatientService {
     if (!patient.uhid) {
       const uhid = await idsService.ensureUhidForPhone(phone, patient.name)
       patient = await patientRepo.update(patient.id, { uhid })
+    }
+
+    // At most 1 booking request per patient/UHID per day (preferredDate)
+    const hasExisting = await bookingRepo.hasBookingForPatientOnDate(patient.id, preferredDate)
+    if (hasExisting) {
+      const uhidMsg = patient.uhid ? ` (UHID: ${patient.uhid})` : ''
+      throw new AppError(`Patient${uhidMsg} already has a booking for this appointment date. Maximum 1 request per day is allowed.`, 400)
     }
 
     const type = data.type === 'HOSPITALIZATION' ? 'HOSPITALIZATION' : 'OPD'
