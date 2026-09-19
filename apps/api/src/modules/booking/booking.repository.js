@@ -140,6 +140,21 @@ class BookingRepository {
     if (filter.preferredDate || filter.appointmentDate) {
       conditions.push(sql`b.appointment_date = ${filter.preferredDate || filter.appointmentDate}`)
     }
+    if (filter.isOld !== undefined && filter.isOld !== null && filter.isOld !== '') {
+      const isOldBool = (filter.isOld === 'true' || filter.isOld === true)
+      conditions.push(sql`p.is_old = ${isOldBool}`)
+    }
+    if (filter.search) {
+      const q = `%${filter.search}%`
+      conditions.push(sql`(
+        p.name ILIKE ${q}
+        OR p.phone ILIKE ${q}
+        OR p.uhid ILIKE ${q}
+        OR p.uhid::text ILIKE ${q}
+        OR b.booking_id ILIKE ${q}
+        OR b.token_number ILIKE ${q}
+      )`)
+    }
 
     const whereClause = conditions.length > 0
       ? sql`WHERE ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`
@@ -155,13 +170,13 @@ class BookingRepository {
       LIMIT ${limit} OFFSET ${offset}
     `
 
-    const [totalRow] = await sql`SELECT count(*) FROM bookings b ${whereClause}`
-    const [confirmedRow] = await sql`SELECT count(*) FROM bookings b ${whereClause ? sql`${whereClause} AND b.status = 'confirmed'` : sql`WHERE b.status = 'confirmed'`}`
-    const [pendingRow] = await sql`SELECT count(*) FROM bookings b ${whereClause ? sql`${whereClause} AND b.status = 'pending'` : sql`WHERE b.status = 'pending'`}`
-    const [cancelledRow] = await sql`SELECT count(*) FROM bookings b ${whereClause ? sql`${whereClause} AND b.status = 'cancelled'` : sql`WHERE b.status = 'cancelled'`}`
-    const [completedRow] = await sql`SELECT count(*) FROM bookings b ${whereClause ? sql`${whereClause} AND b.status = 'completed'` : sql`WHERE b.status = 'completed'`}`
-    const [oldRow] = await sql`SELECT count(*) FROM bookings b JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND p.is_old = true` : sql`WHERE p.is_old = true`}`
-    const [newRow] = await sql`SELECT count(*) FROM bookings b JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND p.is_old = false` : sql`WHERE p.is_old = false`}`
+    const [totalRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause}`
+    const [confirmedRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND b.status = 'confirmed'` : sql`WHERE b.status = 'confirmed'`}`
+    const [pendingRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND b.status = 'pending'` : sql`WHERE b.status = 'pending'`}`
+    const [cancelledRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND b.status = 'cancelled'` : sql`WHERE b.status = 'cancelled'`}`
+    const [completedRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND b.status = 'completed'` : sql`WHERE b.status = 'completed'`}`
+    const [oldRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND p.is_old = true` : sql`WHERE p.is_old = true`}`
+    const [newRow] = await sql`SELECT count(*) FROM bookings b LEFT JOIN patients p ON b.patient_id = p.id ${whereClause ? sql`${whereClause} AND p.is_old = false` : sql`WHERE p.is_old = false`}`
 
     const total = Number(totalRow.count)
 

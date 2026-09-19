@@ -33,6 +33,8 @@ class BookingService {
     if (status) filter.status = status;
     if (doctor_id) filter.doctorId = doctor_id;
     if (type) filter.visitType = type;
+    if (search) filter.search = String(search).trim();
+    if (isOld !== undefined && isOld !== null && isOld !== '') filter.isOld = isOld;
 
     if (date) {
       const parsed = parseAnyDate(date);

@@ -162,6 +162,7 @@ ${this._slipBlock(booking, {
 
     const logoImg = `<img src="${typeof window !== 'undefined' ? window.location.origin : ''}/image/image.png" style="height:48px; max-width:140px; object-fit:contain; vertical-align:middle;" alt="KG Nanda Hospital Logo" onerror="this.style.display='none'"/>`
 
+    // /work /fix /change need to change the doctor fee to something 
     return `<div class="slip">
   <!-- Header -->
   <div class="header">

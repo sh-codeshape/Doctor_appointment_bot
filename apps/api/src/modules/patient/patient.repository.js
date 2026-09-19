@@ -189,6 +189,17 @@ class PatientRepository {
     return mapPatient(row)
   }
 
+  async findByUhid(uhid) {
+    if (!uhid) return null
+    const uhidStr = String(uhid).trim()
+    const [row] = await sql`
+      SELECT * FROM patients
+      WHERE uhid = ${uhidStr} OR uhid ILIKE ${uhidStr}
+      LIMIT 1
+    `
+    return mapPatient(row)
+  }
+
   async search(query, filters = {}) {
     const { isOld, sortBy = 'createdAt', sortOrder = 'desc' } = filters
     const q = query ? `%${query}%` : null
@@ -199,7 +210,7 @@ class PatientRepository {
     if (q && isOldBool !== null) {
       rows = await sql`
         SELECT * FROM patients
-        WHERE (name ILIKE ${q} OR phone ILIKE ${q})
+        WHERE (name ILIKE ${q} OR phone ILIKE ${q} OR uhid ILIKE ${q} OR uhid::text ILIKE ${q})
           AND is_old = ${isOldBool}
         ORDER BY created_at DESC
         LIMIT 100
@@ -207,7 +218,7 @@ class PatientRepository {
     } else if (q) {
       rows = await sql`
         SELECT * FROM patients
-        WHERE (name ILIKE ${q} OR phone ILIKE ${q})
+        WHERE (name ILIKE ${q} OR phone ILIKE ${q} OR uhid ILIKE ${q} OR uhid::text ILIKE ${q})
         ORDER BY created_at DESC
         LIMIT 100
       `

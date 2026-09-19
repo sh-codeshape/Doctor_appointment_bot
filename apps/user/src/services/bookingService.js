@@ -87,9 +87,11 @@ export const bookingService = {
         const q = params.search.toLowerCase()
         filtered = filtered.filter(
           (b) =>
-            b.patient_name.toLowerCase().includes(q) ||
-            b.booking_id.toLowerCase().includes(q) ||
-            b.mobile.includes(q)
+            (b.patient_name || '').toLowerCase().includes(q) ||
+            (b.booking_id || '').toLowerCase().includes(q) ||
+            (b.mobile || '').includes(q) ||
+            (b.uhid || b.patient_uhid || '').toLowerCase().includes(q) ||
+            (b.token_number || b.tokenNumber || '').toLowerCase().includes(q)
         )
       }
       if (params.date) {
