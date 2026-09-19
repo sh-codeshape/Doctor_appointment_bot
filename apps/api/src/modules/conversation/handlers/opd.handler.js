@@ -470,6 +470,15 @@ export const opdHandler = {
         await conversationRepo.resetState(phone)
         return service.sendMessage(phone, MESSAGES.dailyBookingLimitExceeded())
       }
+      if (err.message && (err.message.includes('maximum daily limit') || err.message.includes('reached the maximum'))) {
+        const freshState = await conversationRepo.findByPhone(phone)
+        const doctor = await doctorService.getDoctorById(freshState.selectedDoctorId)
+        const dateStr = freshState.stateData?.dateStr || 'the selected date'
+        const maxCap = doctor?.maxPatientsPerDay || doctor?.max_patients_per_day || 30
+
+        await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
+        return service.sendMessage(phone, MESSAGES.maxPatientsReached(doctor?.name || '', dateStr))
+      }
       throw err
     }
   },

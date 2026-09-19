@@ -362,6 +362,22 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
 
+  it('rejects booking and sends bilingual message when doctor max patient limit is reached', async () => {
+    patientService.registerPatientWithBooking.mockRejectedValueOnce(
+      new (await import('../src/middleware/errorHandler.js')).AppError('Dr. Smith has reached the maximum daily limit of 30 patients for 30/08/2026. Please select another date or doctor.', 400)
+    )
+
+    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
+    await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('Jaunpur')
+    await send('Civil Lines'); await send('232104'); await send('Fever')
+    const reply = await send('1') // Confirm
+
+    expect(reply).toContain('Daily OPD limit has crossed')
+    expect(reply).toContain('इस डेट की OPD फुल हो चुकी है')
+    expect(reply).toContain('All right reserved by the hospital')
+    expect(stateStore[PHONE].currentStep).toBe('SELECT_DATE')
+  })
+
   it('safely handles function parameters and non-string values passed to sendMessage', async () => {
     // Send a message with a function parameter directly
     await conversationService.sendMessage(PHONE, () => 'Test message string')

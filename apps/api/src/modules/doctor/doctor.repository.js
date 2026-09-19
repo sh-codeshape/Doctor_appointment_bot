@@ -28,6 +28,9 @@ function prepareDoctorData(data) {
   if (payload.emergencyFee === undefined && payload.emergency_fee !== undefined) {
     payload.emergencyFee = payload.emergency_fee
   }
+  if (payload.maxPatientsPerDay === undefined && payload.max_patients_per_day !== undefined) {
+    payload.maxPatientsPerDay = payload.max_patients_per_day
+  }
 
   return payload
 }
@@ -50,6 +53,8 @@ function mapDoctor(row) {
     old_patient_fee: Number(row.old_patient_fee || 0),
     emergencyFee: Number(row.emergency_fee || 0),
     emergency_fee: Number(row.emergency_fee || 0),
+    maxPatientsPerDay: row.max_patients_per_day !== undefined && row.max_patients_per_day !== null ? Number(row.max_patients_per_day) : 30,
+    max_patients_per_day: row.max_patients_per_day !== undefined && row.max_patients_per_day !== null ? Number(row.max_patients_per_day) : 30,
     isActive: row.is_active,
     image: row.image_url || '',
     imageUrl: row.image_url || '',
@@ -138,7 +143,7 @@ class DoctorRepository {
     const [row] = await sql`
       INSERT INTO doctors (
         name, department_id, qualification, specialization, specialty,
-        experience_years, consultation_fee, old_patient_fee, emergency_fee, is_active, image_url
+        experience_years, consultation_fee, old_patient_fee, emergency_fee, max_patients_per_day, is_active, image_url
       ) VALUES (
         ${payload.name},
         ${payload.departmentId || null},
@@ -149,6 +154,7 @@ class DoctorRepository {
         ${payload.consultationFee || 0},
         ${payload.oldPatientFee || 0},
         ${payload.emergencyFee || 0},
+        ${payload.maxPatientsPerDay !== undefined ? Number(payload.maxPatientsPerDay) : 30},
         ${payload.isActive !== undefined ? payload.isActive : true},
         ${payload.image || ''}
       )
@@ -171,6 +177,7 @@ class DoctorRepository {
         consultation_fee = COALESCE(${payload.consultationFee ?? null}, consultation_fee),
         old_patient_fee = COALESCE(${payload.oldPatientFee ?? null}, old_patient_fee),
         emergency_fee = COALESCE(${payload.emergencyFee ?? null}, emergency_fee),
+        max_patients_per_day = COALESCE(${payload.maxPatientsPerDay ? Number(payload.maxPatientsPerDay) : null}, max_patients_per_day),
         is_active = COALESCE(${payload.isActive ?? null}, is_active),
         image_url = COALESCE(${payload.image ?? null}, image_url),
         updated_at = NOW()
