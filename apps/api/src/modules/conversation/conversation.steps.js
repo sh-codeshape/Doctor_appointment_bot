@@ -75,8 +75,8 @@ export const MESSAGES = {
     return msg;
   },
 
-  patientTypeEarly: (deptName = '') =>
-    `📋 *PATIENT TYPE / मरीज का प्रकार*${deptName ? `\n🏥 Department: ${deptName}` : ''}\n\n*Is this an Existing/Old Patient or a New Patient at KG Nanda Hospital?*\nक्या मरीज अस्पताल का पुराना मरीज है या नया मरीज?\n\n1️⃣ Old / Existing Patient (पुराना मरीज)\n2️⃣ New Patient (नया मरीज)\n\n0️⃣ Back | 00 Main Menu`,
+  patientTypeEarly: (deptName = "") =>
+    `📋 *PATIENT TYPE / मरीज का प्रकार*${deptName ? `\n🏥 Department: ${deptName}` : ""}\n\n*Is this an Existing/Old Patient or a New Patient at KG Nanda Hospital?*\nक्या मरीज अस्पताल का पुराना मरीज है या नया मरीज?\n\n1️⃣ Old / Existing Patient (पुराना मरीज)\n2️⃣ New Patient (नया मरीज)\n\n0️⃣ Back | 00 Main Menu`,
 
   gynaeCategory: () =>
     `🏥 *Gynaecology & Obstetrics / स्त्री रोग एवं प्रसूति विभाग*\n\n*Please select consultation type / कृपया श्रेणी चुनें:*\n\n1️⃣ Infertility / बांझपन (निःसंतानता)\n2️⃣ Others / अन्य\n\n0️⃣ Back | 00 Main Menu`,
@@ -85,7 +85,7 @@ export const MESSAGES = {
     `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Which visit number is this for the patient?*\nमरीज़ की बांझपन इलाज की यह कौन सी विजिट (बार) है?\n\n2️⃣ 2nd Visit (दूसरी बार)\n3️⃣ 3rd Visit (तीसरी बार)\n4️⃣ 4th Visit (चौथी बार)\n5️⃣ 5th Visit (पांचवीं बार)\n6️⃣ 6th Visit (छठी बार)\n7️⃣ 7th Visit (सातवीं बार)\n8️⃣ 8th Visit (आठवीं बार)\n9️⃣ 9th Visit (नौवीं बार)\n🔟 10th Visit (दसवीं बार)\n1️⃣1️⃣ Other Visit / Any other visit number (अन्य)\n\n0️⃣ Back | 00 Main Menu`,
 
   infertilityVisitOtherPrompt: () =>
-    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
+    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15......) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
 
   doctors: (deptName, docs) => {
     const bilingualDept = languageService.formatBilingual(deptName, null, {
@@ -156,7 +156,7 @@ export const MESSAGES = {
     `🩺 *Health Problem / स्वास्थ्य समस्या*\n*Please briefly describe the patient's health problem.*\nकृपया मरीज की समस्या का संक्षिप्त विवरण दें।\n\n0️⃣ Back | 00 Main Menu`,
 
   review: (data) =>
-    `📋 *REVIEW APPOINTMENT REQUEST*\n\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Type: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ''}\n🩺 Problem: ${data.problem}\n\n*Confirm details?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
+    `📋 *REVIEW APPOINTMENT REQUEST*\n\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Type: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ""}\n🩺 Problem: ${data.problem}\n\n*Confirm details?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
 
   appointmentConfirmed: (data) =>
     `✅ *Appointment Request Received!*\n✅ अपॉइंटमेंट अनुरोध सफलतापूर्वक प्राप्त हुआ!\n\n🎫 *Token No:* ${data.tokenNumber}\n🆔 *UHID No:* ${data.uhid}\n\n📋 *Appointment Details / विवरण:*\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Date: ${data.date}\n👤 Name: ${data.name}\n📱 Mobile: ${data.mobile}\n\n📌 *Your booking has been confirmed.*\n📌 आपकी बुकिंग की पुष्टि कर दी गई है।।\n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें।`,
@@ -217,7 +217,7 @@ export const MESSAGES = {
   },
 
   hospReview: (data) =>
-    `📋 *REVIEW HOSPITALIZATION REQUEST*\n\n🏥 Type: Hospitalization / Admission\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Patient Status: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ''}\n🩺 Illness/Problem: ${data.problem}\n\n*Confirm hospitalization request?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
+    `📋 *REVIEW HOSPITALIZATION REQUEST*\n\n🏥 Type: Hospitalization / Admission\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Patient Status: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ""}\n🩺 Illness/Problem: ${data.problem}\n\n*Confirm hospitalization request?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
 
   hospDone: (data = {}) =>
     `✅ *Hospitalization Request Received!*\n✅ अस्पताल में भर्ती का अनुरोध प्राप्त हुआ!\n\n${data.uhid ? `🆔 *UHID No:* ${data.uhid}\n` : ""}${data.tokenNumber ? `🎫 *Token No:* ${data.tokenNumber}\n` : ""}\nKindly contact the hospital reception desk.\nकृपया अस्पताल की रिसेप्शन से संपर्क करें\n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें।`,
