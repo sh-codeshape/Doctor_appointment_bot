@@ -25,6 +25,10 @@ export const backHandler = {
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_GYNAE_CATEGORY })
       return service.sendMessage(phone, MESSAGES.gynaeCategory())
     }
+    if (state.currentStep === STEPS.OPD_INFERTILITY_VISIT_OTHER) {
+      await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_INFERTILITY_VISIT })
+      return service.sendMessage(phone, MESSAGES.infertilityVisitPrompt())
+    }
     if (state.currentStep === STEPS.OPD_DOCTOR) {
       // Determine where to go back based on context
       if (state.stateData?.category === 'Infertility') {

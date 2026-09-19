@@ -324,4 +324,27 @@ describe('Conversation Booking Flow (current)', () => {
     expect(reply).toContain('Health Problem')
     expect(stateStore[PHONE].currentStep).toBe('PATIENT_PROBLEM')
   })
+
+  it('handles Gynaecology Infertility visit options (2-10) and Option 11 for custom visit number', async () => {
+    departmentService.getActiveDepartments.mockResolvedValue([{ _id: 'deptGynae', name: 'Gynaecology & Obstetrics' }])
+    await send('hi')
+    await send('1') // OPD
+    await send('1') // Gynae dept
+    await send('1') // Old patient
+    let reply = await send('1') // Infertility category
+    expect(reply).toContain('2nd Visit')
+    expect(reply).toContain('10th Visit')
+    expect(reply).toContain('1️⃣1️⃣')
+    expect(stateStore[PHONE].currentStep).toBe('OPD_INFERTILITY_VISIT')
+
+    // Selecting option 11 -> prompts for custom visit number
+    reply = await send('11')
+    expect(reply).toContain('visit number')
+    expect(stateStore[PHONE].currentStep).toBe('OPD_INFERTILITY_VISIT_OTHER')
+
+    // Replying with visit 12 -> transitions to doctor selection
+    reply = await send('12')
+    expect(stateStore[PHONE].currentStep).toBe('OPD_DOCTOR')
+    expect(stateStore[PHONE].stateData.visitNumber).toBe(12)
+  })
 })

@@ -118,7 +118,7 @@ export const opdHandler = {
 
       // Has past visits in DB → current visit number is pastVisits + 1
       const currentVisitNumber = pastVisits + 1
-      const isAnandTurn = (currentVisitNumber === 1 || currentVisitNumber % 3 === 1)
+      const isAnandTurn = (currentVisitNumber % 3 === 1)
       const finalDocs = isAnandTurn
         ? (drAnandDocs.length > 0 ? drAnandDocs : docs)
         : (otherDocs.length > 0 ? otherDocs : docs)
@@ -140,6 +140,42 @@ export const opdHandler = {
   async handleInfertilityVisit(service, phone, state, input) {
     const match = input.trim().match(/\d+/)
     const n = match ? parseInt(match[0], 10) : NaN
+    if (isNaN(n)) return service.sendMessage(phone, MESSAGES.invalidInput())
+
+    if (n === 11) {
+      await conversationRepo.upsert(phone, {
+        currentStep: STEPS.OPD_INFERTILITY_VISIT_OTHER,
+        stateData: { ...state.stateData, category: 'Infertility' }
+      })
+      return service.sendMessage(phone, MESSAGES.infertilityVisitOtherPrompt())
+    }
+
+    if (n < 2 || n > 10) return service.sendMessage(phone, MESSAGES.invalidInput())
+
+    const deptId = state?.stateData?.departmentId
+    const deptName = state?.stateData?.departmentName || 'Gynaecology & Obstetrics'
+
+    let docs = await doctorService.getDoctorsByDepartment(deptId)
+    if (!docs.length) docs = await doctorService.getActiveDoctors()
+
+    const drAnandDocs = docs.filter(isAnandDoctor)
+    const otherDocs = docs.filter(d => !isAnandDoctor(d))
+
+    const isAnandTurn = (n % 3 === 1)
+    const finalDocs = isAnandTurn
+      ? (drAnandDocs.length > 0 ? drAnandDocs : docs)
+      : (otherDocs.length > 0 ? otherDocs : docs)
+
+    await conversationRepo.upsert(phone, {
+      currentStep: STEPS.OPD_DOCTOR,
+      stateData: { ...state.stateData, category: 'Infertility', visitNumber: n }
+    })
+    return service.sendMessage(phone, MESSAGES.doctors(deptName, finalDocs))
+  },
+
+  async handleInfertilityVisitOther(service, phone, state, input) {
+    const match = input.trim().match(/\d+/)
+    const n = match ? parseInt(match[0], 10) : NaN
     if (isNaN(n) || n < 1) return service.sendMessage(phone, MESSAGES.invalidInput())
 
     const deptId = state?.stateData?.departmentId
@@ -151,7 +187,7 @@ export const opdHandler = {
     const drAnandDocs = docs.filter(isAnandDoctor)
     const otherDocs = docs.filter(d => !isAnandDoctor(d))
 
-    const isAnandTurn = (n === 1 || n % 3 === 1)
+    const isAnandTurn = (n % 3 === 1)
     const finalDocs = isAnandTurn
       ? (drAnandDocs.length > 0 ? drAnandDocs : docs)
       : (otherDocs.length > 0 ? otherDocs : docs)
@@ -182,7 +218,7 @@ export const opdHandler = {
       if (drAnand.length > 0) docs = drAnand
     } else if (category === 'Infertility') {
       const n = parseInt(visitNumber, 10) || 1
-      if (n === 1 || n % 3 === 1) {
+      if (n % 3 === 1) {
         const drAnand = docs.filter(isAnandDoctor)
         if (drAnand.length > 0) docs = drAnand
       } else {

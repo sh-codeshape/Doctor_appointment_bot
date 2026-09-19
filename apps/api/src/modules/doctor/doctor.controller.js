@@ -32,7 +32,7 @@ export const doctorController = {
         const drAnandDocs = doctors.filter(isAnandDoctor)
         const otherDocs = doctors.filter(d => !isAnandDoctor(d))
 
-        if (category === 'Others' || n === 1 || n % 3 === 1) {
+        if (category === 'Others' || n % 3 === 1) {
           doctors = drAnandDocs.length > 0 ? drAnandDocs : doctors
         } else {
           doctors = otherDocs.length > 0 ? otherDocs : doctors

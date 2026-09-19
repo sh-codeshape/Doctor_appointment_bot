@@ -12,6 +12,7 @@ export const STEPS = {
   OPD_PATIENT_TYPE_EARLY: "OPD_PATIENT_TYPE_EARLY",
   OPD_GYNAE_CATEGORY: "OPD_GYNAE_CATEGORY",
   OPD_INFERTILITY_VISIT: "OPD_INFERTILITY_VISIT",
+  OPD_INFERTILITY_VISIT_OTHER: "OPD_INFERTILITY_VISIT_OTHER",
   OPD_DOCTOR: "OPD_DOCTOR",
   SELECT_DATE: "SELECT_DATE",
   WHO_FOR: "WHO_FOR",
@@ -81,7 +82,10 @@ export const MESSAGES = {
     `🏥 *Gynaecology & Obstetrics / स्त्री रोग एवं प्रसूति विभाग*\n\n*Please select consultation type / कृपया श्रेणी चुनें:*\n\n1️⃣ Infertility / बांझपन (निःसंतानता)\n2️⃣ Others / अन्य\n\n0️⃣ Back | 00 Main Menu`,
 
   infertilityVisitPrompt: () =>
-    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Which visit number is this for the patient?*\nमरीज़ की बांझपन इलाज की यह कौन सी विजिट (बार) है?\n\n1️⃣ 1st Visit (पहली बार)\n2️⃣ 2nd Visit (दूसरी बार)\n3️⃣ 3rd Visit (तीसरी बार)\n*(or reply with your visit number e.g. 1, 2, 3)*\n\n0️⃣ Back | 00 Main Menu`,
+    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Which visit number is this for the patient?*\nमरीज़ की बांझपन इलाज की यह कौन सी विजिट (बार) है?\n\n2️⃣ 2nd Visit (दूसरी बार)\n3️⃣ 3rd Visit (तीसरी बार)\n4️⃣ 4th Visit (चौथी बार)\n5️⃣ 5th Visit (पांचवीं बार)\n6️⃣ 6th Visit (छठी बार)\n7️⃣ 7th Visit (सातवीं बार)\n8️⃣ 8th Visit (आठवीं बार)\n9️⃣ 9th Visit (नौवीं बार)\n🔟 10th Visit (दसवीं बार)\n1️⃣1️⃣ Other Visit / Any other visit number (अन्य)\n\n0️⃣ Back | 00 Main Menu`,
+
+  infertilityVisitOtherPrompt: () =>
+    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
 
   doctors: (deptName, docs) => {
     const bilingualDept = languageService.formatBilingual(deptName, null, {

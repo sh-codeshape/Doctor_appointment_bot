@@ -92,6 +92,13 @@ class ConversationService {
             state,
             input,
           );
+        case STEPS.OPD_INFERTILITY_VISIT_OTHER:
+          return await opdHandler.handleInfertilityVisitOther(
+            this,
+            phone,
+            state,
+            input,
+          );
         case STEPS.OPD_DOCTOR:
           return await opdHandler.handleOpdDoctor(this, phone, state, input);
         case STEPS.SELECT_DATE:
