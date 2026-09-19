@@ -1,6 +1,7 @@
 import sql from '../../config/database.js'
 import { STAFF_CODE_PREFIX } from '../user/user.repository.js'
 import { normalizePhone } from '../../utils/phone.js'
+import { toObjectIdString } from '../../utils/registration.js'
 import logger from '../../utils/logger.js'
 
 const pad = (n, len) => String(n).padStart(len, '0')
