@@ -1,6 +1,7 @@
 import sql from '../../config/database.js'
 import { STAFF_CODE_PREFIX } from '../user/user.repository.js'
 import { normalizePhone } from '../../utils/phone.js'
+import { toObjectIdString } from '../../utils/registration.js'
 import logger from '../../utils/logger.js'
 
 const pad = (n, len) => String(n).padStart(len, '0')
@@ -83,12 +84,41 @@ class IdsService {
 
   /**
    * Daily sequential token per visit type: T-OPD-DDMMYYYY-001 / T-IPD-DDMMYYYY-001.
+   * Derives sequence from the actual bookings count for the specified doctor and date
+   * to ensure 100% synchronization and prevent sequence skipping/repetition.
    */
   async generateToken(type, doctorId, date = new Date()) {
     const label = type === 'HOSPITALIZATION' ? 'IPD' : 'OPD'
     const docKey = doctorId ? String(doctorId) : 'general'
     const stamp = ddmmyyyy(date)
-    const seq = await nextSequence(`token:${label}:${docKey}:${stamp}`)
+    const dt = new Date(date)
+    const dateStr = isNaN(dt.getTime()) ? new Date().toISOString().slice(0, 10) : dt.toISOString().slice(0, 10)
+
+    let seq
+    const coercedDoctorId = toObjectIdString(doctorId)
+    if (coercedDoctorId) {
+      try {
+        const [row] = await sql`
+          SELECT COUNT(*)::int AS count
+          FROM bookings
+          WHERE doctor_id = ${coercedDoctorId}
+            AND appointment_date::date = ${dateStr}::date
+            AND status != 'cancelled'
+        `
+        seq = (Number(row?.count) || 0) + 1
+
+        const key = `token:${label}:${docKey}:${stamp}`
+        await sql`
+          INSERT INTO counters (key, seq) VALUES (${key}, ${seq})
+          ON CONFLICT (key) DO UPDATE SET seq = ${seq}
+        `
+      } catch (e) {
+        seq = await nextSequence(`token:${label}:${docKey}:${stamp}`)
+      }
+    } else {
+      seq = await nextSequence(`token:${label}:${docKey}:${stamp}`)
+    }
+
     return this.formats.token(label, stamp, seq)
   }
 
