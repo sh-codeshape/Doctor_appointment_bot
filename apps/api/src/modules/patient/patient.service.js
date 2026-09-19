@@ -117,19 +117,32 @@ class PatientService {
     let departmentId = toObjectIdString(data.departmentId)
     let serviceId = toObjectIdString(data.serviceId)
 
-    if (doctorId && !departmentId) {
+    if (doctorId) {
       try {
-        const { default: doctorRepo } = await import('../doctor/doctor.repository.js')
-        const doc = await doctorRepo.findById(doctorId)
-        if (doc && doc.departmentId) {
-          const docDeptId = doc.departmentId._id || doc.departmentId.id || doc.departmentId
-          const coerced = toObjectIdString(docDeptId)
-          if (coerced) {
-            departmentId = coerced
+        const { default: doctorService } = await import('../doctor/doctor.service.js')
+        const doctor = await doctorService.getDoctorById(doctorId)
+        if (doctor) {
+          if (doctor.isActive === false) {
+            throw new AppError(`Dr. ${doctor.name} is currently offline or inactive.`, 400)
+          }
+          const maxCap = doctor.maxPatientsPerDay !== undefined && doctor.maxPatientsPerDay !== null
+            ? Number(doctor.maxPatientsPerDay)
+            : 30
+          const currentCount = await bookingRepo.countBookingsForDoctorOnDate(doctorId, preferredDate)
+          if (currentCount >= maxCap) {
+            const formattedDateStr = preferredDate.toLocaleDateString('en-IN')
+            throw new AppError(`Dr. ${doctor.name} has reached the maximum daily limit of ${maxCap} patients for ${formattedDateStr}. Please select another date or doctor.`, 400)
+          }
+          if (!departmentId && doctor.departmentId) {
+            const docDeptId = doctor.departmentId._id || doctor.departmentId.id || doctor.departmentId
+            const coerced = toObjectIdString(docDeptId)
+            if (coerced) {
+              departmentId = coerced
+            }
           }
         }
       } catch (err) {
-        // ignore lookup error
+        if (err instanceof AppError) throw err
       }
     }
 

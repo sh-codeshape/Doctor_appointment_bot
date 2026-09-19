@@ -278,4 +278,7 @@ export const MESSAGES = {
 
   doctorUnavailable: () =>
     `❌ *Selected Doctor is Unavailable / डॉक्टर उपलब्ध नहीं हैं*\n*The selected doctor is currently offline or inactive. Please select another doctor.*\nचयनित डॉक्टर वर्तमान में उपलब्ध या सक्रिय नहीं हैं। कृपया दूसरे डॉक्टर का चयन करें।`,
+
+  maxPatientsReached: (doctorName = '', dateStr = '') =>
+    `⚠️ *OPD Limit Reached / ओपीडी सीमा समाप्त*${doctorName ? `\n👨‍⚕️ Doctor: ${doctorName}` : ''}${dateStr ? `\n📅 Date: ${dateStr}` : ''}\n\nDaily OPD limit has crossed, Kindly book for another day\nइस डेट की OPD फुल हो चुकी है कृपया किसी अन्य दिन की OPD बुक करें\n\nAll right reserved by the hospital\n\n0️⃣ Back | 00 Main Menu`,
 };

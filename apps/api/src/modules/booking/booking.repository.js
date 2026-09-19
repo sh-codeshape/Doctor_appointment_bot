@@ -581,6 +581,26 @@ class BookingRepository {
       return false
     }
   }
+
+  async countBookingsForDoctorOnDate(doctorId, targetDate) {
+    const coercedDoctorId = toObjectIdString(doctorId)
+    if (!coercedDoctorId || !targetDate) return 0
+    const d = new Date(targetDate)
+    if (isNaN(d.getTime())) return 0
+    const dateStr = d.toISOString().slice(0, 10)
+    try {
+      const [row] = await sql`
+        SELECT COUNT(*)::int AS count
+        FROM bookings
+        WHERE doctor_id = ${coercedDoctorId}
+          AND status != 'cancelled'
+          AND appointment_date::date = ${dateStr}::date
+      `
+      return Number(row?.count || 0)
+    } catch (e) {
+      return 0
+    }
+  }
 }
 
 export default new BookingRepository()

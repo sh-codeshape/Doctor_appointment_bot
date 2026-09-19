@@ -174,6 +174,10 @@ export const hospitalizationHandler = {
         await conversationRepo.resetState(phone)
         return service.sendMessage(phone, MESSAGES.dailyBookingLimitExceeded())
       }
+      if (err.message && (err.message.includes('maximum daily limit') || err.message.includes('reached the maximum'))) {
+        await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_DATE })
+        return service.sendMessage(phone, MESSAGES.maxPatientsReached('', state.stateData?.dateStr || ''))
+      }
       throw err
     }
   },
