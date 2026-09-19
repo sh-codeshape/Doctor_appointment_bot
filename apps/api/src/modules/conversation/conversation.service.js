@@ -372,14 +372,29 @@ class ConversationService {
   }
 
   async sendMessage(phone, body) {
+    // Resolve function references if passed by mistake (e.g., MESSAGES.patientPinCode without ())
+    let messageText = typeof body === "function" ? body() : body;
+
+    if (messageText === undefined || messageText === null) {
+      logger.error(`Attempted to send null/undefined message body to ${phone}`);
+      messageText = "";
+    } else if (typeof messageText !== "string") {
+      messageText = String(messageText);
+    }
+
+    if (!messageText.trim()) {
+      logger.error(`Attempted to send empty message body to ${phone}`);
+      return;
+    }
+
     if (!this.messagingProvider) {
       logger.warn(
         "No messaging provider set — message not sent:",
-        body.slice(0, 50),
+        messageText.slice(0, 50),
       );
       return;
     }
-    await this.messagingProvider.sendTextMessage(phone, body);
+    await this.messagingProvider.sendTextMessage(phone, messageText);
   }
 
   async sendLocation(phone, body) {

@@ -361,4 +361,15 @@ describe('Conversation Booking Flow (current)', () => {
     expect(reply).toContain('Booking Limit Reached')
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
+
+  it('safely handles function parameters and non-string values passed to sendMessage', async () => {
+    // Send a message with a function parameter directly
+    await conversationService.sendMessage(PHONE, () => 'Test message string')
+    expect(mockProvider.sendTextMessage).toHaveBeenCalledWith(PHONE, 'Test message string')
+
+    // Send a message with a number
+    await conversationService.sendMessage(PHONE, 123456)
+    expect(mockProvider.sendTextMessage).toHaveBeenCalledWith(PHONE, '123456')
+  })
 })
+

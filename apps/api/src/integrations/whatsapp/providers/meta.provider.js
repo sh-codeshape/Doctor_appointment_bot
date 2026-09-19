@@ -23,6 +23,13 @@ export class MetaProvider extends IMessagingProvider {
       return;
     }
 
+    // Ensure body is a valid string
+    const stringBody = typeof body === "string" ? body : String(body || "");
+    if (!stringBody.trim()) {
+      logger.error(`Meta send error: body is empty or non-string (received type: ${typeof body})`);
+      return;
+    }
+
     try {
       const response = await fetch(
         `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
@@ -36,7 +43,7 @@ export class MetaProvider extends IMessagingProvider {
             messaging_product: "whatsapp",
             to,
             type: "text",
-            text: { body },
+            text: { body: stringBody },
           }),
         },
       );
@@ -111,7 +118,7 @@ export class MetaProvider extends IMessagingProvider {
           return {
             phone: msg.from,
             type: "text",
-            body: msg.text.body,
+            body: msg.text?.body || "",
           };
         }
 
@@ -120,8 +127,37 @@ export class MetaProvider extends IMessagingProvider {
           return {
             phone: msg.from,
             type: "image",
-            imageId: msg.image.id,
-            mimeType: msg.image.mime_type,
+            imageId: msg.image?.id,
+            mimeType: msg.image?.mime_type,
+          };
+        }
+
+        // Location messages (e.g. sharing location pin during address/pincode step)
+        if (msg.type === "location") {
+          const loc = msg.location || {};
+          const locText = loc.address || loc.name || `${loc.latitude}, ${loc.longitude}`;
+          return {
+            phone: msg.from,
+            type: "text",
+            body: locText,
+          };
+        }
+
+        // Interactive / button reply messages
+        if (msg.type === "interactive") {
+          const reply = msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || msg.interactive?.button_reply?.id || "";
+          return {
+            phone: msg.from,
+            type: "text",
+            body: reply,
+          };
+        }
+
+        if (msg.type === "button") {
+          return {
+            phone: msg.from,
+            type: "text",
+            body: msg.button?.text || "",
           };
         }
       }
