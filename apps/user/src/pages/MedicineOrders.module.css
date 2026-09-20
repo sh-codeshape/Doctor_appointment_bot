@@ -158,3 +158,18 @@
   align-items: center;
   gap: var(--space-2);
 }
+
+.statusFilter {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.statusFilter:focus {
+  border-color: var(--primary);
+}
