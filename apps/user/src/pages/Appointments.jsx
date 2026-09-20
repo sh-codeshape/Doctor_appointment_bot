@@ -58,9 +58,10 @@ export default function Appointments() {
 
   // Fetch bookings with filters — date is ALWAYS the visit date (preferredDate), newest first
   const { data: bookingsData, isLoading } = useQuery({
-    queryKey: ['bookings', { page, limit, status: statusFilter, doctor_id: doctorFilter, search: debouncedSearch, date: dateFilter, isOld: patientTypeFilter }],
+    queryKey: ['bookings', { type: 'OPD', page, limit, status: statusFilter, doctor_id: doctorFilter, search: debouncedSearch, date: dateFilter, isOld: patientTypeFilter }],
     queryFn: () =>
       bookingService.getBookings({
+        type: 'OPD',
         page,
         limit,
         status: statusFilter,

@@ -108,6 +108,7 @@ export class PrintSlipHandler {
   .field-row { display: flex; font-size: 11px; line-height: 1.45; margin-bottom: 3px; }
   .field-name { font-weight: 700; color: #37474f; min-width: 95px; }
   .field-val { color: #102a43; font-weight: 500; flex: 1; }
+
   /* Vitals */
   .vitals-wrap { border: 1px solid #cfd8dc; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
   .vitals-title { font-size: 10px; font-weight: 800; color: #37474f; background: #f1f5f9; padding: 4px 10px; text-transform: uppercase; border-bottom: 1px solid #cfd8dc; }
@@ -116,6 +117,7 @@ export class PrintSlipHandler {
   .vital-header:last-child { border-right: none; }
   .vital-cell { height: 24px; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
   .vital-cell:last-child { border-right: none; }
+
   /* Prescription */
   .rx-box { border: 1px solid #cfd8dc; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; min-height: 75px; }
   .rx-title { font-size: 10px; font-weight: 800; color: #37474f; text-transform: uppercase; margin-bottom: 4px; }
@@ -154,6 +156,7 @@ ${this._slipBlock(booking, {
   }
 
   /** Build one slip block HTML. */
+
   static _slipBlock(b, o) {
     // WhatsApp SVG icon (inline)
     const waSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`
@@ -180,7 +183,7 @@ ${this._slipBlock(booking, {
   <div class="stats-bar">
     <div><div class="stat-label">UHID:</div><div class="stat-value">${b.uhid || 'KGN-PENDING'}</div></div>
     <div><div class="stat-label">TOKEN:</div><div class="stat-value">${o.tokenDisplay}</div></div>
-    <div><div class="stat-label">DOCTOR FEE:</div><div class="stat-value">${o.feeDisplay}</div></div>
+    <div><div class="stat-label">DOCTOR FEE To Be Paid:</div><div class="stat-value">${o.feeDisplay}</div></div>
     <div><div class="stat-label">SOURCE:</div><div class="stat-value">${o.source}</div></div>
   </div>
 
@@ -201,19 +204,6 @@ ${this._slipBlock(booking, {
       <div class="field-row"><span class="field-name">Doctor Fee:</span><span class="field-val" style="font-weight:600">${o.feeDisplay}</span></div>
       <div class="field-row"><span class="field-name">Booking Status:</span><span class="field-val" style="font-weight:700;text-transform:capitalize">${b.status || 'Confirmed'}</span></div>
       <div class="field-row"><span class="field-name">Chief Complaint:</span><span class="field-val">${b.problemDescription || b.problem_description || 'Routine Checkup / Consultation'}</span></div>
-    </div>
-  </div>
-
-  <!-- Vitals -->
-  <div class="vitals-wrap">
-    <div class="vitals-title">VITALS SECTION (For Clinical Use)</div>
-    <div class="vitals-grid">
-      <div class="vital-header">BP (mmHg)</div>
-      <div class="vital-header">Pulse (bpm)</div>
-      <div class="vital-header">Temp (°F)</div>
-      <div class="vital-header">Weight (kg)</div>
-      <div class="vital-header">SpO2 (%)</div>
-      <div class="vital-cell"></div><div class="vital-cell"></div><div class="vital-cell"></div><div class="vital-cell"></div><div class="vital-cell"></div>
     </div>
   </div>
 
