@@ -38,6 +38,22 @@ export class TwilioProvider extends IMessagingProvider {
     }
   }
 
+  async sendInteractiveMessage(to, interactiveObj) {
+    // Twilio WhatsApp interactive templates require pre-approval and different API structures.
+    // For now, we fallback to sending the body text as a normal message.
+    let textBody = interactiveObj?.interactive?.body?.text || 'Please reply';
+    
+    // Add button titles if available to give users a hint
+    if (interactiveObj?.interactive?.type === 'button') {
+        const buttons = interactiveObj.interactive.action?.buttons || [];
+        buttons.forEach((btn, idx) => {
+            textBody += `\n${idx + 1}️⃣ ${btn.reply?.title}`;
+        });
+    }
+
+    return this.sendTextMessage(to, textBody);
+  }
+
   parseIncomingMessage(req) {
     // Twilio sends form-urlencoded body
     const { Body, From } = req.body

@@ -60,6 +60,42 @@ export class MetaProvider extends IMessagingProvider {
     }
   }
 
+  async sendInteractiveMessage(to, interactiveObj) {
+    if (!env.meta.phoneNumberId || !env.meta.accessToken) {
+      logger.debug(`[META-DRY] Interactive To: ${to}\n${JSON.stringify(interactiveObj, null, 2)}`);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.meta.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to,
+            type: "interactive",
+            interactive: interactiveObj.interactive,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error(`Meta interactive send error: ${JSON.stringify(errorData)}`);
+        throw new Error("Failed to send WhatsApp interactive message via Meta");
+      }
+
+      logger.debug(`Meta interactive message sent to ${to}`);
+    } catch (err) {
+      logger.error("Meta interactive send exception:", err.message);
+    }
+  }
+
   async sendLocationMessage(to, body) {
     if (!env.meta.phoneNumberId || !env.meta.accessToken) {
       logger.debug(`[META-DRY] Location to: ${to}\n${JSON.stringify(body)}`);
@@ -145,7 +181,7 @@ export class MetaProvider extends IMessagingProvider {
 
         // Interactive / button reply messages
         if (msg.type === "interactive") {
-          const reply = msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || msg.interactive?.button_reply?.id || "";
+          const reply = msg.interactive?.button_reply?.id || msg.interactive?.list_reply?.id || msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || "";
           return {
             phone: msg.from,
             type: "text",
