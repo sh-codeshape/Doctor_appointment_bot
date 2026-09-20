@@ -109,14 +109,7 @@ export class PrintSlipHandler {
   .field-name { font-weight: 700; color: #37474f; min-width: 95px; }
   .field-val { color: #102a43; font-weight: 500; flex: 1; }
 
-  /* Vitals */
-  .vitals-wrap { border: 1px solid #cfd8dc; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
-  .vitals-title { font-size: 10px; font-weight: 800; color: #37474f; background: #f1f5f9; padding: 4px 10px; text-transform: uppercase; border-bottom: 1px solid #cfd8dc; }
-  .vitals-grid { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; }
-  .vital-header { font-size: 9px; font-weight: 700; color: #475569; padding: 4px 2px; border-right: 1px solid #e2e8f0; background: #f8fafc; }
-  .vital-header:last-child { border-right: none; }
-  .vital-cell { height: 24px; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
-  .vital-cell:last-child { border-right: none; }
+ 
 
   /* Prescription */
   .rx-box { border: 1px solid #cfd8dc; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; min-height: 75px; }
