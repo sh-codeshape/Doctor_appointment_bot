@@ -52,7 +52,32 @@ export const backHandler = {
     }
     if (state.currentStep === STEPS.SELECT_DATE) {
       const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
-      const docs = await doctorService.getDoctorsByDepartment(selectedDoc.departmentId)
+      let docs = await doctorService.getDoctorsByDepartment(selectedDoc.departmentId)
+      
+      const category = state.stateData?.category
+      const visitNumber = state.stateData?.visitNumber
+
+      const isAnandDoctor = (d) => {
+        if (!d) return false
+        const idStr = String(d.id || d._id || '')
+        if (idStr === '2') return true
+        return /^\s*(dr\.?\s*)?anand\b/i.test(d.name || '')
+      }
+
+      if (category === 'NewPatient' || category === 'Others') {
+        const drAnand = docs.filter(isAnandDoctor)
+        if (drAnand.length > 0) docs = drAnand
+      } else if (category === 'Infertility') {
+        const n = parseInt(visitNumber, 10) || 1
+        if (n % 3 === 1) {
+          const drAnand = docs.filter(isAnandDoctor)
+          if (drAnand.length > 0) docs = drAnand
+        } else {
+          const otherDocs = docs.filter(d => !isAnandDoctor(d))
+          if (otherDocs.length > 0) docs = otherDocs
+        }
+      }
+
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_DOCTOR })
       return service.sendMessage(phone, MESSAGES.doctors('Doctors', docs))
     }
