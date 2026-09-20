@@ -84,7 +84,12 @@ export const backHandler = {
       return service.sendMessage(phone, MESSAGES.patientGender())
     }
     if (state.currentStep === STEPS.PATIENT_DISTRICT) {
-      // isOld is known early so PATIENT_TYPE is skipped → go back to PATIENT_GENDER
+      const isExisting = state.stateData?.isExistingPatient === true
+      if (isExisting) {
+        const patients = await patientService.findAllByPhone(phone)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.whoFor(patients))
+      }
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_GENDER })
       return service.sendMessage(phone, MESSAGES.patientGender())
     }
@@ -99,9 +104,9 @@ export const backHandler = {
     if (state.currentStep === STEPS.PATIENT_PROBLEM) {
       const isExisting = state.stateData?.isExistingPatient === true
       if (isExisting) {
-        // Existing patient skips district/address → go back to PATIENT_GENDER
-        await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_GENDER })
-        return service.sendMessage(phone, MESSAGES.patientGender())
+        const patients = await patientService.findAllByPhone(phone)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.whoFor(patients))
       }
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_PINCODE })
       return service.sendMessage(phone, MESSAGES.patientPinCode())
@@ -146,6 +151,12 @@ export const backHandler = {
       return service.sendMessage(phone, MESSAGES.hospGender())
     }
     if (state.currentStep === STEPS.HOSP_DISTRICT) {
+      const isExisting = state.stateData?.isExistingPatient === true
+      if (isExisting) {
+        const patients = await patientService.findAllByPhone(phone)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.hospWhoFor(patients))
+      }
       await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_TYPE })
       return service.sendMessage(phone, MESSAGES.hospType(state.tempName))
     }
@@ -159,10 +170,10 @@ export const backHandler = {
     }
     if (state.currentStep === STEPS.HOSP_PROBLEM) {
       const isExisting = state.stateData?.isExistingPatient === true
-      const hasAddress = Boolean(state.stateData?.district && state.stateData?.district !== 'N/A' && state.stateData?.address && state.stateData?.address !== 'N/A')
-      if (isExisting && hasAddress) {
-        await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_TYPE })
-        return service.sendMessage(phone, MESSAGES.hospType(state.tempName))
+      if (isExisting) {
+        const patients = await patientService.findAllByPhone(phone)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.hospWhoFor(patients))
       }
       await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_PINCODE })
       return service.sendMessage(phone, MESSAGES.hospPinCode())
