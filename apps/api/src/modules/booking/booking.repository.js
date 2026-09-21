@@ -138,10 +138,10 @@ class BookingRepository {
     if (filter.status) conditions.push(sql`b.status = ${filter.status}`)
     if (filter.visitType || filter.type) conditions.push(sql`b.type = ${filter.visitType || filter.type}`)
     if (filter.startDate) {
-      conditions.push(sql`b.appointment_date >= ${filter.startDate}`)
+      conditions.push(sql`b.appointment_date::date >= ${filter.startDate}::date`)
     }
     if (filter.endDate) {
-      conditions.push(sql`b.appointment_date <= ${filter.endDate}`)
+      conditions.push(sql`b.appointment_date::date <= ${filter.endDate}::date`)
     }
     if (filter.preferredDate || filter.appointmentDate) {
       conditions.push(sql`b.appointment_date = ${filter.preferredDate || filter.appointmentDate}`)
