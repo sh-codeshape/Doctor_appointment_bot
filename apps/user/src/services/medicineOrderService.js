@@ -35,6 +35,18 @@ export const medicineOrderService = {
       if (params.status) {
         list = list.filter((o) => o.status === params.status)
       }
+      if (params.startDate) {
+        list = list.filter((o) => {
+          const d = o.createdAt || o.created_at
+          return d ? d.substring(0,10) >= params.startDate : true
+        })
+      }
+      if (params.endDate) {
+        list = list.filter((o) => {
+          const d = o.createdAt || o.created_at
+          return d ? d.substring(0,10) <= params.endDate : true
+        })
+      }
       const page = Number(params.page) || 1
       const limit = Number(params.limit) || 10
       const total = list.length

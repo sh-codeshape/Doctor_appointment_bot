@@ -68,6 +68,13 @@ class MedicineOrderRepository {
       return { data: [], total: 0, page, limit, totalPages: 0 };
     }
 
+    if (filter.startDate) {
+      conditions.push(sql`mo.created_at::date >= ${filter.startDate}::date`);
+    }
+    if (filter.endDate) {
+      conditions.push(sql`mo.created_at::date <= ${filter.endDate}::date`);
+    }
+
     const whereClause =
       conditions.length > 0
         ? sql`WHERE ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`

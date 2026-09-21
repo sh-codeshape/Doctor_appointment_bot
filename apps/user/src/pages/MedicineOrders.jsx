@@ -14,6 +14,14 @@ import { isMockMode } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import styles from './MedicineOrders.module.css'
 
+const getTodayStr = () => {
+  const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export default function MedicineOrders() {
   const { user } = useAuth()
   // Receptionists get read-only access (desk queries: "where is my medicine?")
@@ -22,6 +30,8 @@ export default function MedicineOrders() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [fromDate, setFromDate] = useState(getTodayStr)
+  const [toDate, setToDate] = useState(getTodayStr)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [staffNotes, setStaffNotes] = useState('')
@@ -36,8 +46,8 @@ export default function MedicineOrders() {
     isFetchingNextPage,
     isLoading,
   } = useInfiniteQuery({
-    queryKey: ['medicineOrders', search, statusFilter],
-    queryFn: ({ pageParam = 1 }) => medicineOrderService.getOrders({ search, status: statusFilter, page: pageParam, limit }),
+    queryKey: ['medicineOrders', search, statusFilter, fromDate, toDate],
+    queryFn: ({ pageParam = 1 }) => medicineOrderService.getOrders({ search, status: statusFilter, startDate: fromDate, endDate: toDate, page: pageParam, limit }),
     getNextPageParam: (lastPage) => {
       if (!lastPage || lastPage.page >= lastPage.totalPages) return undefined
       return lastPage.page + 1
@@ -147,6 +157,42 @@ export default function MedicineOrders() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        <div className={styles.dateInputWrapper} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>From:</span>
+          <input
+            type="date"
+            className={styles.dateInput || ''}
+            style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>To:</span>
+          <input
+            type="date"
+            className={styles.dateInput || ''}
+            style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+          <button
+            className={styles.clearDateBtn || ''}
+            style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer' }}
+            onClick={() => { setFromDate(getTodayStr()); setToDate(getTodayStr()); }}
+            title="Jump back to today"
+          >
+            Today
+          </button>
+          {(fromDate || toDate) && (
+            <button
+              className={styles.clearDateBtn || ''}
+              style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer' }}
+              onClick={() => { setFromDate(''); setToDate(''); }}
+              title="Show all dates"
+            >
+              ×
+            </button>
+          )}
         </div>
         <select 
           className={styles.statusFilter}

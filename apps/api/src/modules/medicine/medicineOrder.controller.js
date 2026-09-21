@@ -6,10 +6,12 @@ import logger from "../../utils/logger.js";
 
 class MedicineOrderController {
   async getOrders(req, res) {
-    const { page = 1, limit = 10, status, search } = req.query;
+    const { page = 1, limit = 10, status, search, startDate, endDate } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (search) filter.search = search;
+    if (startDate) filter.startDate = startDate;
+    if (endDate) filter.endDate = endDate;
 
     if (req.admin?.role === "doctor") {
       if (!req.admin.doctorId) {

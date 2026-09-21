@@ -280,7 +280,7 @@ export default function Hospitalization() {
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>
-            Total Requests {dateFilter === getTodayStr() ? ' (Today)' : ''}
+            Total Requests {(fromDate === getTodayStr() && toDate === getTodayStr()) ? ' (Today)' : ''}
           </span>
           <span className={styles.statValue}>{response?.summary?.totalBookings ?? response?.total ?? 0}</span>
         </div>
