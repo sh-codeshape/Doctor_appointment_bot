@@ -39,16 +39,18 @@ export const patientController = {
         const linked = new Set(orders.map(o => String(o.patientId?.id || o.patientId || '')).filter(Boolean))
         scoped = paginated.data.filter((p) => linked.has(String(p.id)))
       }
-      // Enrich with booking count + last visit
-      const enriched = await Promise.all(
-        scoped.map(async (p) => {
-          const pData = { ...p }
-          const bookings = await bookingRepo.findAll({ patientId: p.id }, { page: 1, limit: 1 })
-          pData.totalBookings = bookings.total
-          pData.lastVisit = bookings.data[0]?.createdAt || p.lastVisited || null
-          return pData
-        })
-      )
+      // Enrich with booking count + last visit using a single query
+      const patientIds = scoped.map(p => p.id)
+      const summaries = await bookingRepo.getPatientSummaries(patientIds)
+      const summaryMap = new Map(summaries.map(s => [String(s.patient_id), s]))
+
+      const enriched = scoped.map((p) => {
+        const pData = { ...p }
+        const s = summaryMap.get(String(p.id)) || { total_bookings: 0, last_visit: null }
+        pData.totalBookings = Number(s.total_bookings) || 0
+        pData.lastVisit = s.last_visit || p.lastVisited || null
+        return pData
+      })
 
       res.json({ ...paginated, data: enriched })
     } catch (err) { next(err) }

@@ -618,6 +618,17 @@ class BookingRepository {
       return 0
     }
   }
+
+  async getPatientSummaries(patientIds) {
+    if (!patientIds || !patientIds.length) return []
+    const rows = await sql`
+      SELECT patient_id, count(*) as total_bookings, max(created_at) as last_visit
+      FROM bookings
+      WHERE patient_id IN ${sql(patientIds)}
+      GROUP BY patient_id
+    `
+    return rows
+  }
 }
 
 export default new BookingRepository()

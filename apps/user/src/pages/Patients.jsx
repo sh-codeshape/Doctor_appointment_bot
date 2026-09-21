@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useRef, useCallback } from 'react'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { Search, Eye, Users, Filter } from 'lucide-react'
 import { patientService } from '../services/patientService'
 import { useDebounce } from '../hooks/useDebounce'
@@ -18,17 +18,26 @@ export default function Patients() {
   const [sortBy, setSortBy] = useState('lastVisit')
   const [sortOrder, setSortOrder] = useState('desc')
   const [selectedPatient, setSelectedPatient] = useState(null)
-  const [page, setPage] = useState(1)
-  const limit = 10
+  const limit = 30
 
   const debouncedSearch = useDebounce(search, 400)
 
-  const { data: patientsData, isLoading } = useQuery({
-    queryKey: ['patients', debouncedSearch, filterTab, sortBy, sortOrder, page, limit],
-    queryFn: () => {
+  const { 
+    data: patientsData, 
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
+    queryKey: ['patients', debouncedSearch, filterTab, sortBy, sortOrder, limit],
+    queryFn: ({ pageParam = 1 }) => {
       const isOld = filterTab === 'old' ? 'true' : filterTab === 'new' ? 'false' : ''
-      return patientService.getPatients(debouncedSearch, isOld, sortBy, sortOrder, page, limit)
+      return patientService.getPatients(debouncedSearch, isOld, sortBy, sortOrder, pageParam, limit)
     },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.totalPages) return lastPage.page + 1
+      return undefined
+    }
   })
 
   const { data: patientDetail } = useQuery({
@@ -37,78 +46,84 @@ export default function Patients() {
     enabled: !!selectedPatient,
   })
 
-  const paginatedPatients = patientsData?.data || []
-  const total = patientsData?.total || 0
-  const totalPages = patientsData?.totalPages || 1
+  const paginatedPatients = patientsData?.pages?.flatMap(page => page.data) || []
+  const total = patientsData?.pages?.[0]?.total || 0
 
-  const pagination = {
-    page,
-    limit,
-    total,
-    totalPages,
-    onPageChange: setPage,
-  }
+  const observer = useRef()
+  const lastElementRef = useCallback((node) => {
+    if (isLoading || isFetchingNextPage) return
+    if (observer.current) observer.current.disconnect()
+    observer.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage) {
+        fetchNextPage()
+      }
+    })
+    if (node) observer.current.observe(node)
+  }, [isLoading, isFetchingNextPage, hasNextPage, fetchNextPage])
 
   const columns = ['Patient', 'Type / Status', 'Mobile', 'Total Bookings', 'Last Visit', 'Action']
 
-  const renderRow = (patient) => (
-    <tr key={patient.id}>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
-        <div className={styles.patientRow}>
-          <div className={styles.patientAvatar}>{getInitials(patient.name)}</div>
-          <span className={styles.patientName}>{patient.name}</span>
-        </div>
-      </td>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
-        <span className={`${styles.typeBadge} ${patient.is_old ? styles.oldBadge : styles.newBadge}`}>
-          {patient.is_old ? 'Old Patient' : 'New Patient'}
-        </span>
-      </td>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}>
-        {formatPhone(patient.mobile)}
-      </td>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
-        {patient.total_bookings}
-      </td>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-secondary)', fontSize: '13px' }}>
-        {formatDate(patient.last_visit)}
-      </td>
-      <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
-        <button
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: 'var(--text-secondary)', transition: 'all 0.15s' }}
-          onClick={() => setSelectedPatient(patient)}
-          title="View History"
-        >
-          <Eye size={16} />
-        </button>
-      </td>
-    </tr>
-  )
+  const renderRow = (patient, index) => {
+    const isLastElement = index === paginatedPatients.length - 1;
+    return (
+      <tr key={patient.id} ref={isLastElement ? lastElementRef : null}>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
+          <div className={styles.patientRow}>
+            <div className={styles.patientAvatar}>{getInitials(patient.name)}</div>
+            <span className={styles.patientName}>{patient.name}</span>
+          </div>
+        </td>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
+          <span className={`${styles.typeBadge} ${patient.is_old ? styles.oldBadge : styles.newBadge}`}>
+            {patient.is_old ? 'Old Patient' : 'New Patient'}
+          </span>
+        </td>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}>
+          {formatPhone(patient.mobile)}
+        </td>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
+          {patient.total_bookings}
+        </td>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)', color: 'var(--text-secondary)', fontSize: '13px' }}>
+          {formatDate(patient.last_visit)}
+        </td>
+        <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
+          <button
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: 'var(--text-secondary)', transition: 'all 0.15s' }}
+            onClick={() => setSelectedPatient(patient)}
+            title="View History"
+          >
+            <Eye size={16} />
+          </button>
+        </td>
+      </tr>
+    )
+  }
 
   return (
     <div className={styles.page}>
       <PageHeader
         title="Patients"
-        subtitle="Everyone registered via WhatsApp or front desk · filter and sort by New vs Old Patient status"
+        subtitle={`Everyone registered via WhatsApp or front desk (${total} total)`}
         icon={Users}
       />
       <div className={styles.filterContainer}>
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${filterTab === 'all' ? styles.activeTab : ''}`}
-            onClick={() => { setFilterTab('all'); setPage(1); }}
+            onClick={() => setFilterTab('all')}
           >
             All Patients
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'old' ? styles.activeTab : ''}`}
-            onClick={() => { setFilterTab('old'); setPage(1); }}
+            onClick={() => setFilterTab('old')}
           >
             Old Patients (पुराना मरीज)
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'new' ? styles.activeTab : ''}`}
-            onClick={() => { setFilterTab('new'); setPage(1); }}
+            onClick={() => setFilterTab('new')}
           >
             New Patients (नया मरीज)
           </button>
@@ -121,7 +136,7 @@ export default function Patients() {
               className={styles.searchInput}
               placeholder="Search by name or mobile..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => setSearch(e.target.value)}
               id="patient-search"
             />
           </div>
@@ -135,7 +150,6 @@ export default function Patients() {
                 const [by, order] = e.target.value.split(':')
                 setSortBy(by)
                 setSortOrder(order)
-                setPage(1)
               }}
             >
               <option value="lastVisit:desc">Last Visit (Newest First)</option>
@@ -151,13 +165,19 @@ export default function Patients() {
 
       <Card noPadding>
         {isLoading ? <Loader /> : (
-          <Table
-            columns={columns}
-            data={paginatedPatients}
-            renderRow={renderRow}
-            pagination={pagination}
-            emptyMessage="No patients found"
-          />
+          <>
+            <Table
+              columns={columns}
+              data={paginatedPatients}
+              renderRow={renderRow}
+              emptyMessage="No patients found"
+            />
+            {isFetchingNextPage && (
+              <div style={{ padding: '16px', display: 'flex', justifyContent: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Loading more patients...</span>
+              </div>
+            )}
+          </>
         )}
       </Card>
 
