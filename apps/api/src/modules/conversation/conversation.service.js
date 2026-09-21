@@ -397,15 +397,6 @@ class ConversationService {
     await this.messagingProvider.sendTextMessage(phone, messageText);
   }
 
-  async sendInteractiveMessage(phone, interactiveObj) {
-    if (!this.messagingProvider || typeof this.messagingProvider.sendInteractiveMessage !== 'function') {
-      logger.warn("No messaging provider set or sendInteractiveMessage missing — interactive message not sent:", JSON.stringify(interactiveObj));
-      return;
-    }
-
-    return this.messagingProvider.sendInteractiveMessage(phone, interactiveObj);
-  }
-
   async sendLocation(phone, body) {
     if (!this.messagingProvider || typeof this.messagingProvider.sendLocationMessage !== 'function') {
       logger.warn("No messaging provider set or sendLocationMessage missing — location not sent:", body);

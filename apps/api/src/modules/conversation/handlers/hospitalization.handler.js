@@ -2,7 +2,6 @@ import conversationRepo from '../conversation.repository.js'
 import patientService from '../../patient/patient.service.js'
 import { STEPS, MESSAGES } from '../conversation.steps.js'
 import { resolveDate, formatDateDisplay } from '../../../utils/dateHelpers.js'
-import { patientProblemCategoryPrompt, patientProblemsPart1, patientProblemsPart2, patientProblemData, PatientProblem } from '../PatientProblem.js'
 
 export const hospitalizationHandler = {
   async handleHospWhoFor(service, phone, state, input) {
@@ -76,7 +75,7 @@ export const hospitalizationHandler = {
     })
 
     if (isExisting && hasAddress) {
-      return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+      return service.sendMessage(phone, MESSAGES.hospProblem())
     }
     return service.sendMessage(phone, MESSAGES.hospDistrict())
   },
@@ -96,32 +95,11 @@ export const hospitalizationHandler = {
     const cleanPin = input.trim().replace(/\D/g, '')
     if (cleanPin.length !== 6) return service.sendMessage(phone, MESSAGES.invalidPinCode())
     await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_PROBLEM, stateData: { ...state.stateData, pinCode: cleanPin } })
-    return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+    return service.sendMessage(phone, MESSAGES.hospProblem())
   },
 
   async handleHospProblem(service, phone, state, input) {
-    if (input === 'CHOOSE_PART_1') {
-      return service.sendInteractiveMessage(phone, patientProblemsPart1());
-    }
-    if (input === 'CHOOSE_PART_2') {
-      return service.sendInteractiveMessage(phone, patientProblemsPart2());
-    }
-    if (input === 'CHOOSE_TYPE' || input === 'OTHER') {
-      await conversationRepo.upsert(phone, { stateData: { ...state.stateData, askingCustomProblem: true } });
-      return service.sendMessage(phone, PatientProblem());
-    }
-
-    let finalProblem = '';
-    
-    if (state.stateData?.askingCustomProblem) {
-       finalProblem = input;
-    } else if (patientProblemData[input]) {
-       finalProblem = patientProblemData[input].hi;
-    } else {
-       return service.sendMessage(phone, MESSAGES.invalidInput());
-    }
-
-    await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_DATE, stateData: { ...state.stateData, problem: finalProblem, askingCustomProblem: false } })
+    await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_DATE, stateData: { ...state.stateData, problem: input } })
     return service.sendDateOptions(phone, state, (opts) => MESSAGES.hospDate(opts))
   },
 

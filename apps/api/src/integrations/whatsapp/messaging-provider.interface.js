@@ -14,15 +14,6 @@ export class IMessagingProvider {
   }
 
   /**
-   * Send an interactive message (e.g. lists or buttons) to a WhatsApp number.
-   * @param {string} to - WhatsApp number (e.g., "+919876543210")
-   * @param {object} interactiveObj - The interactive object
-   */
-  async sendInteractiveMessage(to, interactiveObj) {
-    throw new Error('sendInteractiveMessage() not implemented')
-  }
-
-  /**
    * Parse the incoming webhook request to extract phone and message body.
    * @param {Request} req - Express request object
    * @returns {{ phone: string, body: string } | null}

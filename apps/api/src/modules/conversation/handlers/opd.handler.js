@@ -5,7 +5,6 @@ import departmentService from '../../department/department.service.js'
 import bookingRepo from '../../booking/booking.repository.js'
 import { STEPS, MESSAGES } from '../conversation.steps.js'
 import { resolveDate } from '../../../utils/dateHelpers.js'
-import { patientProblemCategoryPrompt, patientProblemsPart1, patientProblemsPart2, patientProblemData, PatientProblem } from '../PatientProblem.js'
 
 const getId = (obj) => obj._id || obj.id
 
@@ -298,7 +297,7 @@ export const opdHandler = {
         }
       })
       if (hasAddress) {
-        return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+        return service.sendMessage(phone, MESSAGES.patientProblem())
       }
       return service.sendMessage(phone, MESSAGES.patientDistrict())
     } else if (idx === patients.length + 1) {
@@ -351,7 +350,7 @@ export const opdHandler = {
     })
 
     if (isExisting && hasAddress) {
-      return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+      return service.sendMessage(phone, MESSAGES.patientProblem())
     }
     return service.sendMessage(phone, MESSAGES.patientDistrict())
   },
@@ -373,7 +372,7 @@ export const opdHandler = {
     })
 
     if (isExisting && hasAddress) {
-      return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+      return service.sendMessage(phone, MESSAGES.patientProblem())
     }
     return service.sendMessage(phone, MESSAGES.patientDistrict())
   },
@@ -393,32 +392,11 @@ export const opdHandler = {
     const cleanPin = input.trim().replace(/\D/g, '')
     if (cleanPin.length !== 6) return service.sendMessage(phone, MESSAGES.invalidPinCode())
     await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_PROBLEM, stateData: { ...state.stateData, pinCode: cleanPin } })
-    return service.sendInteractiveMessage(phone, patientProblemCategoryPrompt())
+    return service.sendMessage(phone, MESSAGES.patientProblem())
   },
 
   async handlePatientProblem(service, phone, state, input) {
-    if (input === 'CHOOSE_PART_1') {
-      return service.sendInteractiveMessage(phone, patientProblemsPart1());
-    }
-    if (input === 'CHOOSE_PART_2') {
-      return service.sendInteractiveMessage(phone, patientProblemsPart2());
-    }
-    if (input === 'CHOOSE_TYPE' || input === 'OTHER') {
-      await conversationRepo.upsert(phone, { stateData: { ...state.stateData, askingCustomProblem: true } });
-      return service.sendMessage(phone, PatientProblem());
-    }
-
-    let finalProblem = '';
-    
-    if (state.stateData?.askingCustomProblem) {
-       finalProblem = input;
-    } else if (patientProblemData[input]) {
-       finalProblem = patientProblemData[input].hi;
-    } else {
-       return service.sendMessage(phone, MESSAGES.invalidInput());
-    }
-
-    await conversationRepo.upsert(phone, { currentStep: STEPS.REVIEW, stateData: { ...state.stateData, problem: finalProblem, askingCustomProblem: false } })
+    await conversationRepo.upsert(phone, { currentStep: STEPS.REVIEW, stateData: { ...state.stateData, problem: input } })
     
     const freshState = await conversationRepo.findByPhone(phone)
     const doctor = await doctorService.getDoctorById(freshState.selectedDoctorId)
