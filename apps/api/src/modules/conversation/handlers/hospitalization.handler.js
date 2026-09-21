@@ -99,8 +99,8 @@ export const hospitalizationHandler = {
   },
 
   async handleHospProblem(service, phone, state, input) {
-    await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_DATE, stateData: { ...state.stateData, problem: input } })
-    return service.sendDateOptions(phone, state, (opts) => MESSAGES.hospDate(opts))
+    const newState = await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_DATE, stateData: { ...state.stateData, problem: input } })
+    return service.sendDateOptions(phone, newState, (opts) => MESSAGES.hospDate(opts))
   },
 
   async handleHospDate(service, phone, state, input) {
