@@ -32,6 +32,9 @@ export const medicineOrderService = {
             o.mobile?.toLowerCase().includes(q)
         )
       }
+      if (params.status) {
+        list = list.filter((o) => o.status === params.status)
+      }
       const page = Number(params.page) || 1
       const limit = Number(params.limit) || 10
       const total = list.length

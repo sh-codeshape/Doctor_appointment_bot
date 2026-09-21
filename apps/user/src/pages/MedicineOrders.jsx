@@ -21,6 +21,7 @@ export default function MedicineOrders() {
   const isAdmin = !user?.role || ['admin', 'superadmin', 'super'].includes(String(user?.role).toLowerCase())
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [staffNotes, setStaffNotes] = useState('')
@@ -35,8 +36,8 @@ export default function MedicineOrders() {
     isFetchingNextPage,
     isLoading,
   } = useInfiniteQuery({
-    queryKey: ['medicineOrders', search],
-    queryFn: ({ pageParam = 1 }) => medicineOrderService.getOrders({ search, page: pageParam, limit }),
+    queryKey: ['medicineOrders', search, statusFilter],
+    queryFn: ({ pageParam = 1 }) => medicineOrderService.getOrders({ search, status: statusFilter, page: pageParam, limit }),
     getNextPageParam: (lastPage) => {
       if (!lastPage || lastPage.page >= lastPage.totalPages) return undefined
       return lastPage.page + 1
@@ -147,6 +148,18 @@ export default function MedicineOrders() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <select 
+          className={styles.statusFilter}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="processing">Processing</option>
+          <option value="dispatched">Dispatched</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
       </div>
 
       <Card noPadding>
