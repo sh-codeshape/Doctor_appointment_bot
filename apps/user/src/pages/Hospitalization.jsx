@@ -46,7 +46,7 @@ export default function Hospitalization() {
   // Query - we fetch bookings but filter by type=HOSPITALIZATION, date = visit date (preferredDate)
   const { data: response, isLoading } = useQuery({
     queryKey: ['hospitalization', { page, limit, search, startDate: fromDate, endDate: toDate, status: statusFilter, isOld: patientTypeFilter }],
-    queryFn: () => bookingService.getBookings({ type: 'HOSPITALIZATION', page, limit, search, startDate: fromDate, endDate: toDate, status: statusFilter, isOld: patientTypeFilter, sortBy: 'preferredDate', sortOrder: 'desc' }),
+    queryFn: () => bookingService.getBookings({ type: 'HOSPITALIZATION', page, limit, search, startDate: fromDate, endDate: toDate, status: statusFilter, isOld: patientTypeFilter, sortBy: 'preferredDate', sortOrder: 'asc' }),
     refetchInterval: isMockMode() ? false : 30000,
   })
 
@@ -71,7 +71,7 @@ export default function Hospitalization() {
           endDate: toDate,
           isOld: patientTypeFilter,
           sortBy: 'preferredDate',
-          sortOrder: 'desc',
+          sortOrder: 'asc',
         });
 
         if (result.data && result.data.length > 0) {

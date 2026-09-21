@@ -70,7 +70,7 @@ export default function Appointments() {
         endDate: toDate,
         isOld: patientTypeFilter,
         sortBy: 'preferredDate',
-        sortOrder: 'desc',
+        sortOrder: 'asc',
       }),
     keepPreviousData: true,
   })
@@ -258,7 +258,7 @@ export default function Appointments() {
           endDate: toDate,
           isOld: patientTypeFilter,
           sortBy: 'preferredDate',
-          sortOrder: 'desc',
+          sortOrder: 'asc',
         });
 
         if (result.data && result.data.length > 0) {
