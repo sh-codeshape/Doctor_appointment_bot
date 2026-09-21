@@ -45,7 +45,7 @@ function normalizeBookingForHistory(b) {
  * Patient Service — read-only operations (patients come from bookings)
  */
 export const patientService = {
-  async getPatients(search = '', isOld = '', sortBy = 'createdAt', sortOrder = 'desc') {
+  async getPatients(search = '', isOld = '', sortBy = 'createdAt', sortOrder = 'desc', page = 1, limit = 10) {
     if (isMockMode()) {
       await new Promise((r) => setTimeout(r, MOCK_DELAY))
       let result = [...mockPatients]
@@ -77,10 +77,21 @@ export const patientService = {
         return sortOrder === 'asc' ? a.id - b.id : b.id - a.id
       })
 
-      return result
+      const total = result.length
+      const paginatedResult = result.slice((page - 1) * limit, page * limit)
+      return {
+        data: paginatedResult,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
     }
-    const { data } = await api.get('/patients', { params: { search, isOld, sortBy, sortOrder } })
-    return data.map(normalizePatient)
+    const { data } = await api.get('/patients', { params: { search, isOld, sortBy, sortOrder, page, limit } })
+    return {
+      ...data,
+      data: (data.data || []).map(normalizePatient)
+    }
   },
 
   async getPatient(id) {

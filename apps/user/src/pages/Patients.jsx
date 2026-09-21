@@ -23,11 +23,11 @@ export default function Patients() {
 
   const debouncedSearch = useDebounce(search, 400)
 
-  const { data: patients, isLoading } = useQuery({
-    queryKey: ['patients', debouncedSearch, filterTab, sortBy, sortOrder],
+  const { data: patientsData, isLoading } = useQuery({
+    queryKey: ['patients', debouncedSearch, filterTab, sortBy, sortOrder, page, limit],
     queryFn: () => {
       const isOld = filterTab === 'old' ? 'true' : filterTab === 'new' ? 'false' : ''
-      return patientService.getPatients(debouncedSearch, isOld, sortBy, sortOrder)
+      return patientService.getPatients(debouncedSearch, isOld, sortBy, sortOrder, page, limit)
     },
   })
 
@@ -37,10 +37,9 @@ export default function Patients() {
     enabled: !!selectedPatient,
   })
 
-  const allPatients = patients || []
-  const total = allPatients.length
-  const totalPages = Math.max(1, Math.ceil(total / limit))
-  const paginatedPatients = allPatients.slice((page - 1) * limit, page * limit)
+  const paginatedPatients = patientsData?.data || []
+  const total = patientsData?.total || 0
+  const totalPages = patientsData?.totalPages || 1
 
   const pagination = {
     page,

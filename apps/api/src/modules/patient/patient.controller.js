@@ -15,20 +15,29 @@ export const patientController = {
         const filtered = q
           ? patients.filter((p) => p.name.toLowerCase().includes(q) || (p.phone || '').includes(q))
           : patients
-        return res.json(filtered)
+        return res.json({
+          data: filtered,
+          total: filtered.length,
+          page: 1,
+          limit: filtered.length || 10,
+          totalPages: 1
+        })
       }
       const filters = {
         isOld: req.query.isOld,
         sortBy: req.query.sortBy,
         sortOrder: req.query.sortOrder,
+        page: parseInt(req.query.page, 10) || 1,
+        limit: parseInt(req.query.limit, 10) || 10,
       }
-      const patients = await patientService.searchPatients(req.query.search, filters)
+      const paginated = await patientService.searchPatients(req.query.search, filters)
+      
       // Pharmacy sees only patients linked to medicine orders.
-      let scoped = patients
+      let scoped = paginated.data
       if (req.admin?.role === 'pharmacy') {
         const { data: orders } = await medOrderRepo.findAll({}, { limit: 10000 })
         const linked = new Set(orders.map(o => String(o.patientId?.id || o.patientId || '')).filter(Boolean))
-        scoped = patients.filter((p) => linked.has(String(p.id)))
+        scoped = paginated.data.filter((p) => linked.has(String(p.id)))
       }
       // Enrich with booking count + last visit
       const enriched = await Promise.all(
@@ -41,7 +50,7 @@ export const patientController = {
         })
       )
 
-      res.json(enriched)
+      res.json({ ...paginated, data: enriched })
     } catch (err) { next(err) }
   },
 

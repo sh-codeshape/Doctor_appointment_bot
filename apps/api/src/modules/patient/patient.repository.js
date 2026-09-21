@@ -201,43 +201,43 @@ class PatientRepository {
   }
 
   async search(query, filters = {}) {
-    const { isOld, sortBy = 'createdAt', sortOrder = 'desc' } = filters
+    const { isOld, sortBy = 'createdAt', sortOrder = 'desc', page = 1, limit = 10 } = filters
     const q = query ? `%${query}%` : null
     const isOldBool = isOld !== undefined && isOld !== null && isOld !== '' ? (isOld === 'true' || isOld === true) : null
+    const offset = (page - 1) * limit
 
-    // Perform parameterized query based on conditions
-    let rows
-    if (q && isOldBool !== null) {
-      rows = await sql`
-        SELECT * FROM patients
-        WHERE (name ILIKE ${q} OR phone ILIKE ${q} OR uhid ILIKE ${q} OR uhid::text ILIKE ${q})
-          AND is_old = ${isOldBool}
-        ORDER BY created_at DESC
-        LIMIT 100
-      `
-    } else if (q) {
-      rows = await sql`
-        SELECT * FROM patients
-        WHERE (name ILIKE ${q} OR phone ILIKE ${q} OR uhid ILIKE ${q} OR uhid::text ILIKE ${q})
-        ORDER BY created_at DESC
-        LIMIT 100
-      `
-    } else if (isOldBool !== null) {
-      rows = await sql`
-        SELECT * FROM patients
-        WHERE is_old = ${isOldBool}
-        ORDER BY created_at DESC
-        LIMIT 100
-      `
-    } else {
-      rows = await sql`
-        SELECT * FROM patients
-        ORDER BY created_at DESC
-        LIMIT 100
-      `
+    const conditions = []
+    if (q) {
+      conditions.push(sql`(name ILIKE ${q} OR phone ILIKE ${q} OR uhid ILIKE ${q} OR uhid::text ILIKE ${q})`)
+    }
+    if (isOldBool !== null) {
+      conditions.push(sql`is_old = ${isOldBool}`)
     }
 
-    return rows.map(mapPatient)
+    const whereClause = conditions.length > 0
+      ? sql`WHERE ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`
+      : sql``
+
+    const sortCol = (sortBy === 'name') ? sql`name` : (sortBy === 'isOld' ? sql`is_old` : (sortBy === 'lastVisit' ? sql`last_visited` : sql`created_at`))
+    const orderDir = (sortOrder === 'asc' || sortOrder === '1' || sortOrder === 1) ? sql`ASC` : sql`DESC`
+
+    const rows = await sql`
+      SELECT * FROM patients
+      ${whereClause}
+      ORDER BY ${sortCol} ${orderDir} NULLS LAST, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `
+
+    const [countResult] = await sql`SELECT count(*) FROM patients ${whereClause}`
+    const total = Number(countResult.count)
+
+    return {
+      data: rows.map(mapPatient),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
   }
 
   async update(id, data) {
