@@ -46,6 +46,26 @@ class BookingService {
       }
     }
 
+    if (startDate) {
+      const parsed = parseAnyDate(startDate);
+      if (parsed) {
+        const yyyy = parsed.getFullYear();
+        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        const dd = String(parsed.getDate()).padStart(2, '0');
+        filter.startDate = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
+    if (endDate) {
+      const parsed = parseAnyDate(endDate);
+      if (parsed) {
+        const yyyy = parsed.getFullYear();
+        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        const dd = String(parsed.getDate()).padStart(2, '0');
+        filter.endDate = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
     return bookingRepo.findAll(filter, { page, limit, sortBy, sortOrder });
   }
 

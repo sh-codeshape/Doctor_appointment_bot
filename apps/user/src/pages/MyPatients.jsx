@@ -32,17 +32,27 @@ export default function MyPatients() {
   const [page, setPage] = useState(1)
 
   // Advanced Filters & Sort State
-  const [dateFilter, setDateFilter] = useState('all') // 'all', 'today', 'custom'
-  const [customDate, setCustomDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'confirmed', 'pending', 'completed'
-  const [sortBy, setSortBy] = useState('token') // 'token', 'date', 'name', 'status'
+  const [sortBy, setSortBy] = useState('preferredDate') // 'token', 'date', 'name', 'status'
 
   const limit = 10
   const debouncedSearch = useDebounce(search, 400)
 
   const { data: bookingsData, isLoading } = useQuery({
-    queryKey: ['my-bookings', user?.doctorId],
-    queryFn: () => bookingService.getBookings({ limit: 100, doctor_id: user?.doctorId }),
+    queryKey: ['my-bookings', user?.doctorId, { page, limit, search: debouncedSearch, startDate: fromDate, endDate: toDate, status: statusFilter, sortBy }],
+    queryFn: () => bookingService.getBookings({ 
+      limit, 
+      page, 
+      doctor_id: user?.doctorId, 
+      search: debouncedSearch,
+      startDate: fromDate,
+      endDate: toDate,
+      status: statusFilter === 'all' ? '' : statusFilter,
+      sortBy: sortBy === 'date' ? 'preferredDate' : sortBy === 'token' ? 'token_number' : sortBy === 'name' ? 'patient_name' : sortBy === 'status' ? 'status' : 'preferredDate',
+      sortOrder: sortBy === 'date' ? 'desc' : 'asc'
+    }),
     enabled: !!user?.doctorId,
   })
 
@@ -65,59 +75,16 @@ export default function MyPatients() {
     }
   }
 
-  // Filter & Sort Logic
   const rows = useMemo(() => {
-    let list = (bookingsData?.data || []).filter((b) => b.status !== 'cancelled')
+    return (bookingsData?.data || []).filter((b) => b.status !== 'cancelled')
+  }, [bookingsData])
 
-    // 1. Text Search Filter (Name, UHID, Token, Mobile)
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase()
-      list = list.filter(
-        (b) =>
-          b.patient_name.toLowerCase().includes(q) ||
-          (b.uhid || '').toLowerCase().includes(q) ||
-          (b.token_number || '').toLowerCase().includes(q) ||
-          (b.mobile || '').includes(q)
-      )
-    }
-
-    // 2. Date Filter
-    const todayStr = new Date().toISOString().split('T')[0]
-    if (dateFilter === 'today') {
-      list = list.filter((b) => (b.date || b.created_at || '').startsWith(todayStr))
-    } else if (dateFilter === 'custom' && customDate) {
-      list = list.filter((b) => (b.date || b.created_at || '').startsWith(customDate))
-    }
-
-    // 3. Status Filter
-    if (statusFilter !== 'all') {
-      list = list.filter((b) => b.status?.toLowerCase() === statusFilter.toLowerCase())
-    }
-
-    // 4. Sorting
-    return [...list].sort((a, b) => {
-      if (sortBy === 'token') {
-        return (a.token_number || '').localeCompare(b.token_number || '')
-      }
-      if (sortBy === 'date') {
-        return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0)
-      }
-      if (sortBy === 'name') {
-        return (a.patient_name || '').localeCompare(b.patient_name || '')
-      }
-      if (sortBy === 'status') {
-        return (a.status || '').localeCompare(b.status || '')
-      }
-      return 0
-    })
-  }, [bookingsData, debouncedSearch, dateFilter, customDate, statusFilter, sortBy])
-
-  const total = rows.length
-  const totalPages = Math.max(1, Math.ceil(total / limit))
-  const paginatedRows = rows.slice((page - 1) * limit, page * limit)
+  const total = bookingsData?.total || rows.length
+  const totalPages = bookingsData?.totalPages || Math.max(1, Math.ceil(total / limit))
+  const paginatedRows = rows
 
   const pagination = {
-    page,
+    page: bookingsData?.page || page,
     limit,
     total,
     totalPages,
@@ -312,27 +279,41 @@ export default function MyPatients() {
         </div>
 
         {/* Date Filter */}
-        <select
-          className={styles.select}
-          value={dateFilter}
-          onChange={(e) => {
-            setDateFilter(e.target.value)
-            setPage(1)
-          }}
-        >
-          <option value="all">All Dates</option>
-          <option value="today">Today's Queue</option>
-          <option value="custom">Specific Date</option>
-        </select>
-
-        {dateFilter === 'custom' && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>From:</span>
           <input
             type="date"
             className={styles.select}
-            value={customDate}
-            onChange={(e) => setCustomDate(e.target.value)}
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value)
+              setPage(1)
+            }}
           />
-        )}
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>To:</span>
+          <input
+            type="date"
+            className={styles.select}
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value)
+              setPage(1)
+            }}
+          />
+          {(fromDate || toDate) && (
+            <button
+              style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              onClick={() => {
+                setFromDate('')
+                setToDate('')
+                setPage(1)
+              }}
+              title="Clear Dates"
+            >
+              ×
+            </button>
+          )}
+        </div>
 
         {/* Status Filter */}
         <select

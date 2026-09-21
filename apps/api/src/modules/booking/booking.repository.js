@@ -137,6 +137,12 @@ class BookingRepository {
     if (filter.patientId) conditions.push(sql`b.patient_id = ${filter.patientId}`)
     if (filter.status) conditions.push(sql`b.status = ${filter.status}`)
     if (filter.visitType || filter.type) conditions.push(sql`b.type = ${filter.visitType || filter.type}`)
+    if (filter.startDate) {
+      conditions.push(sql`b.appointment_date >= ${filter.startDate}`)
+    }
+    if (filter.endDate) {
+      conditions.push(sql`b.appointment_date <= ${filter.endDate}`)
+    }
     if (filter.preferredDate || filter.appointmentDate) {
       conditions.push(sql`b.appointment_date = ${filter.preferredDate || filter.appointmentDate}`)
     }

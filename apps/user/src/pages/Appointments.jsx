@@ -38,9 +38,8 @@ export default function Appointments() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [patientTypeFilter, setPatientTypeFilter] = useState('')
-  // Default to TODAY's preferredDate so staff land on today's confirm queue.
-  // List is always newest-first (server sorts preferredDate desc, createdAt desc) — no sort dropdown needed.
-  const [dateFilter, setDateFilter] = useState(getTodayStr)
+  const [fromDate, setFromDate] = useState(getTodayStr)
+  const [toDate, setToDate] = useState(getTodayStr)
   // Default 30 rows so a full day's queue fits with pagination (10/30/50/100)
   const [limit, setLimit] = useState(30)
   // Doctors see only their own bookings — scoped from the login, never the dropdown
@@ -58,7 +57,7 @@ export default function Appointments() {
 
   // Fetch bookings with filters — date is ALWAYS the visit date (preferredDate), newest first
   const { data: bookingsData, isLoading } = useQuery({
-    queryKey: ['bookings', { type: 'OPD', page, limit, status: statusFilter, doctor_id: doctorFilter, search: debouncedSearch, date: dateFilter, isOld: patientTypeFilter }],
+    queryKey: ['bookings', { type: 'OPD', page, limit, status: statusFilter, doctor_id: doctorFilter, search: debouncedSearch, startDate: fromDate, endDate: toDate, isOld: patientTypeFilter }],
     queryFn: () =>
       bookingService.getBookings({
         type: 'OPD',
@@ -67,7 +66,8 @@ export default function Appointments() {
         status: statusFilter,
         doctor_id: doctorFilter,
         search: debouncedSearch,
-        date: dateFilter,
+        startDate: fromDate,
+        endDate: toDate,
         isOld: patientTypeFilter,
         sortBy: 'preferredDate',
         sortOrder: 'desc',
@@ -236,7 +236,49 @@ export default function Appointments() {
     </tr>
   )
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    // Implement chunked fetching for CSV export to prevent backpressure
+    const allBookings = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let isFetching = true;
+
+    toast.loading('Fetching data in chunks...', { id: 'csv-export' });
+
+    while (isFetching) {
+      try {
+        const result = await bookingService.getBookings({
+          type: 'OPD',
+          page: currentPage,
+          limit: 100, // Fetch in chunks of 100
+          status: statusFilter,
+          doctor_id: doctorFilter,
+          search: debouncedSearch,
+          startDate: fromDate,
+          endDate: toDate,
+          isOld: patientTypeFilter,
+          sortBy: 'preferredDate',
+          sortOrder: 'desc',
+        });
+
+        if (result.data && result.data.length > 0) {
+          allBookings.push(...result.data);
+        }
+        totalPages = result.totalPages || 1;
+        
+        if (currentPage >= totalPages) {
+          isFetching = false;
+        } else {
+          currentPage++;
+          // Wait 3-4 seconds before fetching the next chunk to avoid backpressure
+          await new Promise((resolve) => setTimeout(resolve, 3500));
+        }
+      } catch (err) {
+        toast.error('Error fetching data chunks', { id: 'csv-export' });
+        return;
+      }
+    }
+
     const headers = [
       'UHID',
       'Token Number',
@@ -250,7 +292,7 @@ export default function Appointments() {
     ]
     const csvRows = [headers.join(',')]
 
-    bookings.forEach((b) => {
+    allBookings.forEach((b) => {
       const uhid = b.uhid || b.patient_uhid || b.patientId?.uhid || ''
       const tokenNum = b.token_number || b.tokenNumber || ''
       const patientName = b.patient_name || b.patientId?.name || ''
@@ -282,7 +324,7 @@ export default function Appointments() {
     a.href = url
     a.download = `opd-appointments-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
-    toast.success('Bookings exported to CSV')
+    toast.success('Bookings exported to CSV', { id: 'csv-export' })
   }
 
   return (
@@ -296,7 +338,7 @@ export default function Appointments() {
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>
-            Total Bookings {dateFilter === getTodayStr() ? ' (Today)' : ''}
+            Total Bookings {fromDate === getTodayStr() && toDate === getTodayStr() ? ' (Today)' : ''}
           </span>
           <span className={styles.statValue}>{bookingsData?.summary?.totalBookings ?? bookingsData?.total ?? 0}</span>
         </div>
@@ -356,25 +398,36 @@ export default function Appointments() {
             />
           </div>
           <div className={styles.dateInputWrapper}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>From:</span>
             <input
               type="date"
               className={styles.dateInput}
-              value={dateFilter}
+              value={fromDate}
               onChange={(e) => {
-                setDateFilter(e.target.value)
+                setFromDate(e.target.value)
                 setPage(1)
-                // New day = new queue: drop any leftover name/ID search so the
-                // day's full patient list shows (search + date combine as AND).
                 setSearch('')
               }}
-              id="date-filter"
-              title="Filter by visit date (Preferred Date)"
+              id="date-filter-from"
+            />
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>To:</span>
+            <input
+              type="date"
+              className={styles.dateInput}
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value)
+                setPage(1)
+                setSearch('')
+              }}
+              id="date-filter-to"
             />
             <button
               className={styles.clearDateBtn}
               style={{ position: 'static', marginLeft: 6, border: '1px solid var(--border-primary)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}
               onClick={() => {
-                setDateFilter(getTodayStr())
+                setFromDate(getTodayStr())
+                setToDate(getTodayStr())
                 setPage(1)
                 setSearch('')
               }}
@@ -382,11 +435,12 @@ export default function Appointments() {
             >
               Today
             </button>
-            {dateFilter && (
+            {(fromDate || toDate) && (
               <button
                 className={styles.clearDateBtn}
                 onClick={() => {
-                  setDateFilter('')
+                  setFromDate('')
+                  setToDate('')
                   setPage(1)
                   setSearch('')
                 }}
@@ -459,8 +513,8 @@ export default function Appointments() {
         </div>
         <div className={styles.actions}>
           <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-secondary)', marginRight: 8 }}>
-            {dateFilter
-              ? `${bookingsData?.total ?? 0} patient${(bookingsData?.total ?? 0) === 1 ? '' : 's'} · ${formatDate(dateFilter)} · newest first`
+            {(fromDate || toDate)
+              ? `${bookingsData?.total ?? 0} patient${(bookingsData?.total ?? 0) === 1 ? '' : 's'} · ${fromDate === toDate ? formatDate(fromDate) : `${formatDate(fromDate)} to ${formatDate(toDate)}`} · newest first`
               : `${bookingsData?.total ?? 0} patients · all dates · newest first`}
           </span>
           <Button variant="secondary" icon={Download} size="sm" onClick={handleExportCSV}>
@@ -479,7 +533,7 @@ export default function Appointments() {
             data={bookings}
             renderRow={renderRow}
             pagination={pagination}
-            emptyMessage={dateFilter ? `No bookings for ${formatDate(dateFilter)}` : 'No bookings found'}
+            emptyMessage={(fromDate || toDate) ? `No bookings for selected dates` : 'No bookings found'}
           />
         )}
       </Card>

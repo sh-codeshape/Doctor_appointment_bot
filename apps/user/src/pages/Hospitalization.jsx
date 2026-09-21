@@ -34,7 +34,8 @@ export default function Hospitalization() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(30)
   const [search, setSearch] = useState('')
-  const [dateFilter, setDateFilter] = useState(getTodayStr)
+  const [fromDate, setFromDate] = useState(getTodayStr)
+  const [toDate, setToDate] = useState(getTodayStr)
   const [statusFilter, setStatusFilter] = useState('')
   const [patientTypeFilter, setPatientTypeFilter] = useState('')
   // Always newest-first (server sorts preferredDate desc, createdAt desc) — no sort dropdown needed.
@@ -44,13 +45,52 @@ export default function Hospitalization() {
 
   // Query - we fetch bookings but filter by type=HOSPITALIZATION, date = visit date (preferredDate)
   const { data: response, isLoading } = useQuery({
-    queryKey: ['hospitalization', { page, limit, search, date: dateFilter, status: statusFilter, isOld: patientTypeFilter }],
-    queryFn: () => bookingService.getBookings({ type: 'HOSPITALIZATION', page, limit, search, date: dateFilter, status: statusFilter, isOld: patientTypeFilter, sortBy: 'preferredDate', sortOrder: 'desc' }),
+    queryKey: ['hospitalization', { page, limit, search, startDate: fromDate, endDate: toDate, status: statusFilter, isOld: patientTypeFilter }],
+    queryFn: () => bookingService.getBookings({ type: 'HOSPITALIZATION', page, limit, search, startDate: fromDate, endDate: toDate, status: statusFilter, isOld: patientTypeFilter, sortBy: 'preferredDate', sortOrder: 'desc' }),
     refetchInterval: isMockMode() ? false : 30000,
   })
 
   // Export CSV handler
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    const allBookings = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let isFetching = true;
+
+    toast.loading('Fetching data in chunks...', { id: 'csv-export' });
+
+    while (isFetching) {
+      try {
+        const result = await bookingService.getBookings({
+          type: 'HOSPITALIZATION',
+          page: currentPage,
+          limit: 100, // Fetch in chunks of 100
+          status: statusFilter,
+          search,
+          startDate: fromDate,
+          endDate: toDate,
+          isOld: patientTypeFilter,
+          sortBy: 'preferredDate',
+          sortOrder: 'desc',
+        });
+
+        if (result.data && result.data.length > 0) {
+          allBookings.push(...result.data);
+        }
+        totalPages = result.totalPages || 1;
+        
+        if (currentPage >= totalPages) {
+          isFetching = false;
+        } else {
+          currentPage++;
+          await new Promise((resolve) => setTimeout(resolve, 3500));
+        }
+      } catch (err) {
+        toast.error('Error fetching data chunks', { id: 'csv-export' });
+        return;
+      }
+    }
+
     const headers = [
       'UHID',
       'Token Number',
@@ -64,7 +104,7 @@ export default function Hospitalization() {
     ]
     const csvRows = [headers.join(',')]
 
-    const reqs = response?.data || []
+    const reqs = allBookings || []
     reqs.forEach((b) => {
       const uhid = b.uhid || b.patient_uhid || b.patientId?.uhid || ''
       const tokenNum = b.token_number || b.tokenNumber || ''
@@ -97,7 +137,7 @@ export default function Hospitalization() {
     a.href = url
     a.download = `hospitalization-requests-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
-    toast.success('Hospitalization requests exported to CSV')
+    toast.success('Hospitalization requests exported to CSV', { id: 'csv-export' })
   }
 
   // Mutation
@@ -295,26 +335,34 @@ export default function Hospitalization() {
             />
           </div>
           <div className={styles.dateInputWrapper}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>From:</span>
             <input
               type="date"
               className={styles.dateInput}
-              value={dateFilter}
-              onChange={(e) => { setDateFilter(e.target.value); setPage(1); setSearch('') }}
-              id="ipd-date-filter"
-              title="Filter by visit date (Preferred Date)"
+              value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(1); setSearch('') }}
+              id="ipd-date-filter-from"
+            />
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>To:</span>
+            <input
+              type="date"
+              className={styles.dateInput}
+              value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(1); setSearch('') }}
+              id="ipd-date-filter-to"
             />
             <button
               className={styles.clearDateBtn}
               style={{ position: 'static', marginLeft: 6, border: '1px solid var(--border-primary)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}
-              onClick={() => { setDateFilter(getTodayStr()); setPage(1); setSearch('') }}
+              onClick={() => { setFromDate(getTodayStr()); setToDate(getTodayStr()); setPage(1); setSearch('') }}
               title="Jump back to today"
             >
               Today
             </button>
-            {dateFilter && (
+            {(fromDate || toDate) && (
               <button
                 className={styles.clearDateBtn}
-                onClick={() => { setDateFilter(''); setPage(1); setSearch('') }}
+                onClick={() => { setFromDate(''); setToDate(''); setPage(1); setSearch('') }}
                 title="Show all dates"
               >
                 ×
@@ -368,8 +416,8 @@ export default function Hospitalization() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ alignSelf: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
-            {dateFilter
-              ? `${response?.total ?? 0} patient${(response?.total ?? 0) === 1 ? '' : 's'} · ${formatDate(dateFilter)} · newest first`
+            {(fromDate || toDate)
+              ? `${response?.total ?? 0} patient${(response?.total ?? 0) === 1 ? '' : 's'} · ${fromDate === toDate ? formatDate(fromDate) : `${formatDate(fromDate)} to ${formatDate(toDate)}`} · newest first`
               : `${response?.total ?? 0} patients · all dates · newest first`}
           </span>
           <Button variant="secondary" icon={Download} size="sm" onClick={handleExportCSV}>
@@ -399,7 +447,7 @@ export default function Hospitalization() {
                   }
                 : null
             }
-            emptyMessage={dateFilter ? `No hospitalization requests for ${formatDate(dateFilter)}` : 'No hospitalization requests found.'}
+            emptyMessage={(fromDate || toDate) ? `No hospitalization requests for selected dates` : 'No hospitalization requests found.'}
           />
         )}
       </Card>
