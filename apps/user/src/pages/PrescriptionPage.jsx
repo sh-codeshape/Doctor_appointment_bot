@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Search, Plus, Trash2, Printer, Save, Pill, Activity, TestTube, ArrowLeft, Stethoscope } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Search, Plus, Trash2, Printer, Save, Pill, Activity, TestTube, ArrowLeft, Stethoscope, CheckCircle } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
 import Card from '../components/common/Card'
 import { Loader } from '../components/common/Loader'
@@ -15,6 +16,18 @@ import styles from './PrescriptionPage.module.css'
 export default function PrescriptionPage() {
   const { bookingId } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => bookingService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      toast.success('Visit marked as completed!')
+      navigate('/my-patients')
+    },
+    onError: () => toast.error('Failed to update patient status'),
+  })
 
   const [booking, setBooking] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -226,9 +239,18 @@ export default function PrescriptionPage() {
       // 3. Print Doctor OPD Prescription Slip
       await DoctorPrescriptionPrintHandler.printPrescription(slipData)
       toast.success('Doctor OPD Prescription printed successfully!', { duration: 4000 })
+      return true
     } catch (err) {
       console.error('Print failed', err)
       toast.error('Failed to generate prescription print slip')
+      return false
+    }
+  }
+
+  const handlePrintAndComplete = async () => {
+    const success = await handlePrint()
+    if (success && booking?.id) {
+      statusMutation.mutate({ id: booking.id, status: 'completed' })
     }
   }
 
@@ -592,8 +614,19 @@ export default function PrescriptionPage() {
           <ArrowLeft size={15} /> Back to My Patients
         </button>
 
-        <button className={styles.savePrintBtn} onClick={handlePrint}>
-          <Printer size={16} /> Print OPD Consultation Slip
+        <button 
+          className={styles.savePrintBtn} 
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
+          onClick={handlePrint}
+        >
+          <Printer size={16} /> Print Only
+        </button>
+
+        <button 
+          className={styles.savePrintBtn} 
+          onClick={handlePrintAndComplete}
+        >
+          <CheckCircle size={16} /> Print & Complete Visit
         </button>
       </div>
     </div>
