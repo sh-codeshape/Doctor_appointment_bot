@@ -59,6 +59,7 @@ export default function MyPatients() {
       endDate: toDate,
       status: statusFilter,
       isOld: patientTypeFilter,
+      // TODO: /fix /work /token_number - User will handle token_number desc sorting later due to db issues
       sortBy: 'preferredDate',
       sortOrder: 'desc'
     }),

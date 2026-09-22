@@ -17,7 +17,7 @@ const isAnandDoctor = (d) => {
 
 export const opdHandler = {
   async handleOpdDepartment(service, phone, state, input) {
-    const deps = await departmentService.getActiveDepartments()
+    const deps = await departmentService.getOpdWhatsAppDepartments()
     const idx = parseInt(input, 10) - 1
     if (isNaN(idx) || idx < 0 || idx >= deps.length) return service.sendMessage(phone, MESSAGES.invalidInput())
     

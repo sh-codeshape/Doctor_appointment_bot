@@ -305,7 +305,7 @@ class ConversationService {
     switch (input) {
       case "1": {
         // OPD
-        const deps = await departmentService.getActiveDepartments();
+        const deps = await departmentService.getOpdWhatsAppDepartments();
         if (!deps.length) {
           await conversationRepo.upsert(phone, {
             currentFlow: "OPD_BOOKING",
