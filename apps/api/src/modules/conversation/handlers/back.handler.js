@@ -11,7 +11,7 @@ export const backHandler = {
       return service.resetAndWelcome(phone)
     }
     if (state.currentStep === STEPS.OPD_PATIENT_TYPE_EARLY) {
-      const deps = await departmentService.getActiveDepartments()
+      const deps = await departmentService.getOpdWhatsAppDepartments()
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_DEPARTMENT })
       return service.sendMessage(phone, MESSAGES.departments(deps))
     }
@@ -87,6 +87,11 @@ export const backHandler = {
       return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))
     }
     if (state.currentStep === STEPS.PATIENT_NAME) {
+      const patients = await patientService.findAllByPhone(phone)
+      if (patients.length > 0) {
+        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.whoFor(patients))
+      }
       const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
       await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
       return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))

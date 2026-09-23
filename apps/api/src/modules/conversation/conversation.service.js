@@ -155,14 +155,7 @@ class ConversationService {
           );
 
         case STEPS.REVIEW:
-          await opdHandler.handleReview(this, phone, state, input);
-          await this.sendLocation(phone, {
-            latitude: 25.3524371,
-            longitude: 82.8434218,
-            name: "KG Nanda Hospital",
-            address: "Bichhiya Kala, Chandauli, Uttar Pradesh 232104",
-          });
-          return;
+          return await opdHandler.handleReview(this, phone, state, input);
         // Hospitalization Flow
         case STEPS.HOSP_WHO_FOR:
           return await hospitalizationHandler.handleHospWhoFor(
@@ -242,19 +235,12 @@ class ConversationService {
             input,
           );
         case STEPS.HOSP_REVIEW:
-          await hospitalizationHandler.handleHospReview(
+          return await hospitalizationHandler.handleHospReview(
             this,
             phone,
             state,
             input,
           );
-          await this.sendLocation(phone, {
-            latitude: 25.3524371,
-            longitude: 82.8434218,
-            name: "KG Nanda Hospital",
-            address: "Bichhiya Kala, Chandauli, Uttar Pradesh 232104",
-          });
-          return;
         // Medicine Flow
         case STEPS.MED_PRESCRIPTION:
           return await medicineHandler.handleMedPrescription(
@@ -286,6 +272,9 @@ class ConversationService {
             state,
             input,
           );
+
+        case STEPS.SUPPORT:
+          return this.resetAndWelcome(phone);
 
         default:
           return this.resetAndWelcome(phone);
@@ -343,9 +332,8 @@ class ConversationService {
         });
         return this.sendMessage(phone, MESSAGES.medStart());
       case "4": // General Query
+        await conversationRepo.upsert(phone, { currentStep: STEPS.SUPPORT });
         await this.sendMessage(phone, MESSAGES.info());
-
-        // i have hardcoded this so it's not a good way but it's fine
         await this.sendLocation(phone, {
           latitude: 25.3524371,
           longitude: 82.8434218,
@@ -354,8 +342,10 @@ class ConversationService {
         });
         return;
       case "5": // Support
+        await conversationRepo.upsert(phone, { currentStep: STEPS.SUPPORT });
         return this.sendMessage(phone, MESSAGES.support());
       case "6": // Email Help
+        await conversationRepo.upsert(phone, { currentStep: STEPS.SUPPORT });
         return this.sendMessage(phone, MESSAGES.email());
       case "0": // Main Menu
         return this.sendMessage(phone, MESSAGES.welcome());

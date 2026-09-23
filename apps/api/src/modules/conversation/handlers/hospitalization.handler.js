@@ -10,8 +10,11 @@ export const hospitalizationHandler = {
 
     if (!isNaN(idx) && idx >= 1 && idx <= patients.length) {
       const selected = patients[idx - 1]
+      const hasAddress = Boolean(selected.district && selected.district !== 'N/A' && selected.address && selected.address !== 'N/A')
+      const nextStep = hasAddress ? STEPS.HOSP_PROBLEM : STEPS.HOSP_DISTRICT
+
       await conversationRepo.upsert(phone, {
-        currentStep: STEPS.HOSP_TYPE,
+        currentStep: nextStep,
         tempName: selected.name,
         tempAge: selected.age,
         tempGender: selected.gender,
@@ -23,7 +26,10 @@ export const hospitalizationHandler = {
           address: selected.address || 'N/A'
         }
       })
-      return service.sendMessage(phone, MESSAGES.hospType(selected.name))
+      if (hasAddress) {
+        return service.sendMessage(phone, MESSAGES.hospProblem())
+      }
+      return service.sendMessage(phone, MESSAGES.hospDistrict())
     } else if (idx === patients.length + 1) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.HOSP_NAME })
       return service.sendMessage(phone, MESSAGES.hospStart())
@@ -168,6 +174,12 @@ export const hospitalizationHandler = {
         uhid: patient?.uhid || 'KGN-NEW',
         tokenNumber: booking?.tokenNumber || 'HOSP-001'
       }))
+      await service.sendLocation(phone, {
+        latitude: 25.3524371,
+        longitude: 82.8434218,
+        name: "KG Nanda Hospital",
+        address: "Bichhiya Kala, Chandauli, Uttar Pradesh 232104",
+      })
       await conversationRepo.resetState(phone)
     } catch (err) {
       if (err.message && err.message.includes('already has a booking')) {

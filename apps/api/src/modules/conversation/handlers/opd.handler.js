@@ -334,7 +334,7 @@ export const opdHandler = {
 
     // isOld is already known from OPD_PATIENT_TYPE_EARLY
     // If it's somehow not set, fall back to asking
-    if (state.stateData?.isOld === undefined && state.stateData?.isOld === null) {
+    if (state.stateData?.isOld === undefined || state.stateData?.isOld === null) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_TYPE, tempGender: gender })
       return service.sendMessage(phone, MESSAGES.patientType(state.tempName))
     }
@@ -463,6 +463,13 @@ export const opdHandler = {
         name: state.tempName,
         mobile: phone
       }))
+
+      await service.sendLocation(phone, {
+        latitude: 25.3524371,
+        longitude: 82.8434218,
+        name: "KG Nanda Hospital",
+        address: "Bichhiya Kala, Chandauli, Uttar Pradesh 232104",
+      })
 
       await conversationRepo.resetState(phone)
     } catch (err) {
