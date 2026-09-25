@@ -159,8 +159,11 @@ export const MESSAGES = {
     `📋 *REVIEW APPOINTMENT REQUEST*\n\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Type: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ""}\n🩺 Problem: ${data.problem}\n\n*Confirm details?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
 
   appointmentConfirmed: (data) =>
-    `✅ *Appointment Request Received!*\n✅ अपॉइंटमेंट अनुरोध सफलतापूर्वक प्राप्त हुआ!\n\n🎫 *Token No:* ${data.tokenNumber}\n🆔 *UHID No:* ${data.uhid}\n\n📋 *Appointment Details / विवरण:*\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Date: ${data.date}\n👤 Name: ${data.name}\n📱 Mobile: ${data.mobile}\n\n📌 *Your booking has been confirmed.*\n📌 आपकी बुकिंग की पुष्टि कर दी गई है।।\n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें।`,
+    `✅ *Appointment Request Received!*\n✅ अपॉइंटमेंट अनुरोध सफलतापूर्वक प्राप्त हुआ!\n\n🎫 *Token No:* ${data.tokenNumber}\n🆔 *UHID No:* ${data.uhid}\n\n📋 *Appointment Details / विवरण:*\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Date: ${data.date}\n👤 Name: ${data.name}\n📱 Mobile: ${data.mobile}\n\n📌 *Your booking has been confirmed.*\n📌 आपकी बुकिंग की पुष्टि कर दी गई है।।\n\n  *Note : Kindly reach the hospital before 10:00 AM and submit your case file. Submission of the case file is mandatory.*\n कृपया हॉस्पिटल पहुँच कर अपनी केस फाइल सुबह १० बजे तक अवश्य जमा कर  दें  \n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें। `,
 
+  //   confirmation:()=>{
+  //   return `sdf`
+  // }
   // Hospitalization
   hospWhoFor: (patients = []) => {
     let msg = `🏥 *HOSPITALIZATION / भर्ती किसके लिए है?*\n\n*Please choose a patient:* / कृपया मरीज चुनें:\n\n`;
@@ -265,7 +268,7 @@ export const MESSAGES = {
     `📧 *Email Help / ईमेल सहायता*\n\n*For email assistance, contact us at:*\n📧 admin@kgnandahospital.com\n\n0️⃣ Main Menu`,
 
   dailyBookingLimitExceeded: (uhid = '') =>
-    `❌ *Booking Limit Reached / बुक सीमा पूरी*\n\n*A booking already exists for this patient${uhid ? ` (UHID: ${uhid})` : ''} on this date. Only 1 request per patient is allowed per day.*\nइस मरीज${uhid ? ` (UHID: ${uhid})` : ''} का इस तारीख के लिए पहले से अपॉइंटमेंट दर्ज है। एक मरीज के लिए प्रतिदिन केवल 1 अनुरोध की अनुमति है।\n\n0️⃣ Main Menu`,
+    `❌ *Appointment Already Booked / अपॉइंटमेंट पहले से बुक है*\n\n*Your appointment has already been generated for this date. ${uhid ? ` (UHID: ${uhid})` : ''} *\nआपका रजिस्ट्रेशन${uhid ? ` (UHID: ${uhid})` : ''} सफलतापूर्वक दर्ज है और इस दिनांक की OPD पहले से ही बुक है।\n\n0️⃣ Main Menu`,
 
   invalidInput: () =>
     `❌ Invalid input. Please try again or type "menu".\nगलत इनपुट। कृपया पुनः प्रयास करें।`,
@@ -281,4 +284,6 @@ export const MESSAGES = {
 
   maxPatientsReached: (doctorName = '', dateStr = '') =>
     `⚠️ *OPD Limit Reached / ओपीडी सीमा समाप्त*${doctorName ? `\n👨‍⚕️ Doctor: ${doctorName}` : ''}${dateStr ? `\n📅 Date: ${dateStr}` : ''}\n\nDaily OPD limit has crossed, Kindly book for another day\nइस डेट की OPD फुल हो चुकी है कृपया किसी अन्य दिन की OPD बुक करें\n\nAll right reserved by the hospital\n\n0️⃣ Back | 00 Main Menu`,
+
+
 };
