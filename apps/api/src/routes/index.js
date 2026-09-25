@@ -147,6 +147,42 @@ router.post('/medicines', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/save-medicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/savemedicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 
+router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { default_dosage, default_frequency, default_duration } = req.body
+    
+    const [updated] = await sql`
+      UPDATE medicines 
+      SET 
+        default_dosage = COALESCE(${default_dosage}, default_dosage),
+        default_frequency = COALESCE(${default_frequency}, default_frequency),
+        default_duration = COALESCE(${default_duration}, default_duration)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Medicine not found' })
+    }
+    res.json({ success: true, data: updated })
+  } catch (err) { next(err) }
+})
+
+router.delete('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const [deleted] = await sql`
+      DELETE FROM medicines 
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Medicine not found' })
+    }
+    res.json({ success: true, data: deleted })
+  } catch (err) { next(err) }
+})
+
 // Lab tests master list
 router.get('/lab-tests', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
   try {
