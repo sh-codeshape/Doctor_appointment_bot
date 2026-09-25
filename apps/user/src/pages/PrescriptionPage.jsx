@@ -166,6 +166,17 @@ export default function PrescriptionPage() {
     setSelectedMeds(selectedMeds.filter((_, i) => i !== index))
   }
 
+  const handleDeleteMedicine = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete "${name}" from the catalog?`)) return
+    try {
+      await prescriptionService.deleteMedicine(id)
+      setAvailableMeds((prev) => prev.filter((m) => m.id !== id))
+      toast.success(`${name} deleted from catalog`)
+    } catch (err) {
+      toast.error('Failed to delete medicine')
+    }
+  }
+
   // Handlers for adding test
   const handleAddTest = (testObj) => {
     if (selectedTests.length >= 10) {
@@ -207,15 +218,26 @@ export default function PrescriptionPage() {
       // 1. Auto-add any new medicines & tests to master DB catalog so doctors don't retype them
       if (selectedMeds.length > 0 || selectedTests.length > 0) {
         await Promise.allSettled([
-          ...selectedMeds.map((med) =>
-            prescriptionService.addMedicine({
-              department_id: targetDeptId,
-              name: med.name,
-              default_dosage: med.dosage,
-              default_frequency: med.frequency,
-              default_duration: med.duration,
-            })
-          ),
+          ...selectedMeds.map((med) => {
+            const isExisting = availableMeds.some((m) => m.id === med.id)
+            if (isExisting) {
+              return prescriptionService.updateMedicine(med.id, {
+                default_dosage: med.dosage,
+                default_frequency: med.frequency,
+                default_duration: med.duration,
+                default_remarks: med.remarks,
+              })
+            } else {
+              return prescriptionService.addMedicine({
+                department_id: targetDeptId,
+                name: med.name,
+                default_dosage: med.dosage,
+                default_frequency: med.frequency,
+                default_duration: med.duration,
+                default_remarks: med.remarks,
+              })
+            }
+          }),
           ...selectedTests.map((test) =>
             prescriptionService.addLabTest({
               department_id: targetDeptId,
@@ -420,8 +442,18 @@ export default function PrescriptionPage() {
         {/* Quick Add Chips */}
         <div className={styles.chipsRow}>
           {availableMeds.slice(0, 15).map((m) => (
-            <div key={m.id} className={styles.chip} onClick={() => handleAddMedicine(m)}>
-              <Plus size={12} /> {m.name}
+            <div key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <div className={styles.chip} onClick={() => handleAddMedicine(m)} style={{ margin: 0 }}>
+                <Plus size={12} /> {m.name}
+              </div>
+              <button 
+                type="button"
+                onClick={() => handleDeleteMedicine(m.id, m.name)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                title="Delete medicine from catalog"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>

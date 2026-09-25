@@ -100,4 +100,38 @@ export const prescriptionService = {
     const res = await api.post('/lab-tests', testData)
     return res.data
   },
+
+  /**
+   * Update an existing medicine in the master DB catalog
+   */
+  async updateMedicine(id, medData) {
+    if (isMockMode()) {
+      const index = mockMedicines.findIndex((m) => String(m.id) === String(id))
+      if (index !== -1) {
+        mockMedicines[index] = { ...mockMedicines[index], ...medData }
+        return { success: true, data: mockMedicines[index] }
+      }
+      return { success: false, error: 'Medicine not found' }
+    }
+
+    const res = await api.put(`/medicines/${id}`, medData)
+    return res.data
+  },
+
+  /**
+   * Delete a medicine from the master DB catalog
+   */
+  async deleteMedicine(id) {
+    if (isMockMode()) {
+      const index = mockMedicines.findIndex((m) => String(m.id) === String(id))
+      if (index !== -1) {
+        mockMedicines.splice(index, 1)
+        return { success: true }
+      }
+      return { success: false, error: 'Medicine not found' }
+    }
+
+    const res = await api.delete(`/medicines/${id}`)
+    return res.data
+  },
 }
