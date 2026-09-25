@@ -23,6 +23,33 @@ services:
       - docbot-redis-data:/data
     restart: unless-stopped
 
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=docbot
+      - POSTGRES_USER=docbot
+      - POSTGRES_PASSWORD=docbot
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      - postgres
+
+  api:
+    image: ${DOCKERHUB_USERNAME:-your_dockerhub_username}/docbot-api:latest
+    container_name: docbot-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
 volumes:
   docbot-postgres-data:
   docbot-redis-data:
