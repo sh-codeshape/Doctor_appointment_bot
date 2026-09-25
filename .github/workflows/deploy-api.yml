@@ -37,10 +37,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.PROJECT_PATH }}
+
             git pull origin main
-            
-            # Pull the new image from Docker Hub
+
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/docbot-api:latest
-            
-            # Restart the API service with the new image
-            docker compose up -d api
+
+            docker compose -f docker-compose.yml up -d api
