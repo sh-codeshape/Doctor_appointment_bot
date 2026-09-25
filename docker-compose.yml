@@ -39,7 +39,8 @@ services:
       - postgres
 
   api:
-    image: ${DOCKERHUB_USERNAME:-your_dockerhub_username}/docbot-api:latest
+    image: ${DOCKERHUB_USERNAME}/docbot-api:latest
+
     container_name: docbot-api
     ports:
       - "3000:3000"
