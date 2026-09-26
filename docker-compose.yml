@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -12,6 +10,13 @@ services:
       POSTGRES_DB: docbot
     volumes:
       - docbot-postgres-data:/var/lib/postgresql/data
+      - ./backup.sql:/docker-entrypoint-initdb.d/01_backup.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docbot -d docbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     restart: unless-stopped
 
   redis:
@@ -32,9 +37,8 @@ services:
     volumes:
       - ${DBMATE_PATH}:/db/migrations
     depends_on:
-      - postgres
-    networks:
-      - default
+      postgres:
+        condition: service_healthy
 
   pgbackups:
     image: prodrigestivill/postgres-backup-local
