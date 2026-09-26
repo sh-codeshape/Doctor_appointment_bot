@@ -23,6 +23,19 @@ services:
       - docbot-redis-data:/data
     restart: unless-stopped
 
+  dbmate:
+    image: amacneil/dbmate:latest
+    container_name: docbot-dbmate
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://docbot:docbot@postgres:5432/docbot?sslmode=disable
+    volumes:
+      - ${DBMATE_PATH}:/db/migrations
+    depends_on:
+      - postgres
+    networks:
+      - default
+
   pgbackups:
     image: prodrigestivill/postgres-backup-local
     restart: always
@@ -40,7 +53,6 @@ services:
 
   api:
     image: ${DOCKERHUB_USERNAME}/docbot-api:latest
-
     container_name: docbot-api
     ports:
       - "3000:3000"
@@ -54,4 +66,3 @@ services:
 volumes:
   docbot-postgres-data:
   docbot-redis-data:
-
