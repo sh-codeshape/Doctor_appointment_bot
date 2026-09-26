@@ -147,42 +147,6 @@ router.post('/medicines', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/save-medicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/savemedicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 
-router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
-  try {
-    const { id } = req.params
-    const { default_dosage, default_frequency, default_duration } = req.body
-    
-    const [updated] = await sql`
-      UPDATE medicines 
-      SET 
-        default_dosage = COALESCE(${default_dosage}, default_dosage),
-        default_frequency = COALESCE(${default_frequency}, default_frequency),
-        default_duration = COALESCE(${default_duration}, default_duration)
-      WHERE id = ${id}
-      RETURNING *
-    `
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Medicine not found' })
-    }
-    res.json({ success: true, data: updated })
-  } catch (err) { next(err) }
-})
-
-router.delete('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
-  try {
-    const { id } = req.params
-    const [deleted] = await sql`
-      DELETE FROM medicines 
-      WHERE id = ${id}
-      RETURNING *
-    `
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Medicine not found' })
-    }
-    res.json({ success: true, data: deleted })
-  } catch (err) { next(err) }
-})
-
 // Lab tests master list
 router.get('/lab-tests', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
   try {
@@ -230,6 +194,120 @@ const saveLabTestHandler = async (req, res, next) => {
 router.post('/lab-tests', requireRole(...STAFF, DOCTOR), saveLabTestHandler)
 router.post('/save-lab-test', requireRole(...STAFF, DOCTOR), saveLabTestHandler)
 router.post('/savelabtest', requireRole(...STAFF, DOCTOR), saveLabTestHandler)
+
+router.put('/lab-tests/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { category } = req.body
+    
+    const [updated] = await sql`
+      UPDATE lab_tests 
+      SET 
+        category = COALESCE(${category}, category)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Lab test not found' })
+    }
+    res.json({ success: true, data: updated })
+  } catch (err) { next(err) }
+})
+
+router.delete('/lab-tests/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const [deleted] = await sql`
+      DELETE FROM lab_tests 
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Lab test not found' })
+    }
+    res.json({ success: true, data: deleted })
+  } catch (err) { next(err) }
+})
+
+// Additional Advice master list
+router.get('/additional-advice', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { department_id, search } = req.query
+    let rows = []
+    if (search) {
+      const q = `%${search}%`
+      rows = await sql`SELECT * FROM additional_advice WHERE is_active = true AND advice ILIKE ${q} ORDER BY advice ASC`
+    } else if (department_id) {
+      rows = await sql`SELECT * FROM additional_advice WHERE is_active = true AND (department_id IS NULL OR department_id = ${department_id}) ORDER BY advice ASC`
+    } else {
+      rows = await sql`SELECT * FROM additional_advice WHERE is_active = true ORDER BY advice ASC`
+    }
+    res.json({ data: rows })
+  } catch (err) { next(err) }
+})
+
+const saveAdviceHandler = async (req, res, next) => {
+  try {
+    const { advice, department_id } = req.body
+    if (!advice || !advice.trim()) {
+      return res.status(400).json({ success: false, message: 'Advice text is required' })
+    }
+    const adviceTrimmed = advice.trim()
+    const dId = department_id ? Number(department_id) : null
+
+    const [existing] = await sql`
+      SELECT * FROM additional_advice 
+      WHERE LOWER(advice) = LOWER(${adviceTrimmed})
+      LIMIT 1
+    `
+    if (existing) {
+      return res.json({ success: true, data: existing, created: false })
+    }
+
+    const [created] = await sql`
+      INSERT INTO additional_advice (department_id, advice, is_active)
+      VALUES (${dId}, ${adviceTrimmed}, true)
+      RETURNING *
+    `
+    res.status(201).json({ success: true, data: created, created: true })
+  } catch (err) { next(err) }
+}
+
+router.post('/additional-advice', requireRole(...STAFF, DOCTOR), saveAdviceHandler)
+
+router.put('/additional-advice/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { advice } = req.body
+    
+    const [updated] = await sql`
+      UPDATE additional_advice 
+      SET 
+        advice = COALESCE(${advice}, advice)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Advice not found' })
+    }
+    res.json({ success: true, data: updated })
+  } catch (err) { next(err) }
+})
+
+router.delete('/additional-advice/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const [deleted] = await sql`
+      DELETE FROM additional_advice 
+      WHERE id = ${id}
+      RETURNING *
+    `
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Advice not found' })
+    }
+    res.json({ success: true, data: deleted })
+  } catch (err) { next(err) }
+})
 
 // Staff management — superadmin + admin
 router.use('/users', requireRole(SUPERADMIN, ADMIN), userRoutes)

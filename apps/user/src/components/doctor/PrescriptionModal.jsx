@@ -118,17 +118,6 @@ export default function PrescriptionModal({ isOpen, onClose, booking, onSaveAndP
     setSelectedMeds(selectedMeds.filter((_, i) => i !== index))
   }
 
-  const handleDeleteMedicine = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}" from the catalog?`)) return
-    try {
-      await prescriptionService.deleteMedicine(id)
-      setAvailableMeds((prev) => prev.filter((m) => m.id !== id))
-      toast.success(`${name} deleted from catalog`)
-    } catch (err) {
-      toast.error('Failed to delete medicine')
-    }
-  }
-
   // Handlers for adding test
   const handleAddTest = (testObj) => {
     if (selectedTests.length >= 10) {
@@ -165,38 +154,6 @@ export default function PrescriptionModal({ isOpen, onClose, booking, onSaveAndP
 
   const handleSave = async (shouldPrint = false) => {
     try {
-      const targetDeptId = booking?.department_id || (deptFilter !== 'all' ? deptFilter : 1)
-      if (selectedMeds.length > 0 || selectedTests.length > 0) {
-        await Promise.allSettled([
-          ...selectedMeds.map((med) => {
-            const isExisting = availableMeds.some((m) => m.id === med.id)
-            if (isExisting) {
-              return prescriptionService.updateMedicine(med.id, {
-                default_dosage: med.dosage,
-                default_frequency: med.frequency,
-                default_duration: med.duration,
-                default_remarks: med.remarks,
-              })
-            } else {
-              return prescriptionService.addMedicine({
-                department_id: targetDeptId,
-                name: med.name,
-                default_dosage: med.dosage,
-                default_frequency: med.frequency,
-                default_duration: med.duration,
-                default_remarks: med.remarks,
-              })
-            }
-          }),
-          ...selectedTests.map((test) =>
-            prescriptionService.addLabTest({
-              department_id: targetDeptId,
-              name: test.name,
-            })
-          ),
-        ])
-      }
-
       const savedData = await prescriptionService.savePrescription(booking.id, {
         vitals,
         doctorNotes,
@@ -370,18 +327,8 @@ export default function PrescriptionModal({ isOpen, onClose, booking, onSaveAndP
           {/* Quick Select Medicines Chips */}
           <div className={styles.chipsRow}>
             {availableMeds.slice(0, 12).map((m) => (
-              <div key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <div className={styles.chip} onClick={() => handleAddMedicine(m)} style={{ margin: 0 }}>
-                  <Plus size={11} /> {m.name}
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => handleDeleteMedicine(m.id, m.name)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
-                  title="Delete medicine from catalog"
-                >
-                  <Trash2 size={13} />
-                </button>
+              <div key={m.id} className={styles.chip} onClick={() => handleAddMedicine(m)}>
+                <Plus size={11} /> {m.name}
               </div>
             ))}
           </div>

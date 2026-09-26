@@ -26,7 +26,7 @@ export default function Patients() {
   const { data: patients, isLoading } = useQuery({
     queryKey: ['patients', debouncedSearch, filterTab, sortBy, sortOrder],
     queryFn: () => {
-      const isOld = filterTab === 'oldLoading' ? 'true' : filterTab === 'new' ? 'false' : ''
+      const isOld = filterTab === 'old' ? 'true' : filterTab === 'new' ? 'false' : ''
       return patientService.getPatients(debouncedSearch, isOld, sortBy, sortOrder)
     },
   })

@@ -112,26 +112,14 @@ export const printService = {
 
     // Real mode: booking detail (populated doctor + patient age/gender/address) …
     const detail = await bookingService.getBooking(booking.id)
-    // … plus the patient record (address/district/UHID/isOld).
+    // … plus the patient record and doctor record — fetch in parallel.
     const targetPatientId = detail.patient_id || detail.patientId?.id || (typeof detail.patientId === 'number' ? detail.patientId : null)
-    let patient = null
-    if (targetPatientId) {
-      try {
-        patient = await patientService.getPatient(targetPatientId)
-      } catch {
-        patient = null
-      }
-    }
-
     const targetDoctorId = detail.doctor_id || detail.doctorId?.id || (typeof detail.doctorId === 'number' ? detail.doctorId : null)
-    let doctor = null
-    if (targetDoctorId) {
-      try {
-        doctor = await doctorService.getDoctor(targetDoctorId)
-      } catch {
-        doctor = null
-      }
-    }
+
+    const [patient, doctor] = await Promise.all([
+      targetPatientId ? patientService.getPatient(targetPatientId).catch(() => null) : Promise.resolve(null),
+      targetDoctorId ? doctorService.getDoctor(targetDoctorId).catch(() => null) : Promise.resolve(null),
+    ])
 
     const isOld = Boolean(detail.isOld || detail.is_old || patient?.isOld || patient?.is_old)
     const oldPtFee = doctor?.old_patient_fee || doctor?.oldPatientFee || detail.old_patient_fee || detail.doctorId?.oldPatientFee

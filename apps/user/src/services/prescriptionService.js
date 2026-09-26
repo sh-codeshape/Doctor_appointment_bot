@@ -1,5 +1,5 @@
 import api, { isMockMode } from './api'
-import { mockMedicines, mockLabTests, mockBookings } from '../data/mockData'
+import { mockMedicines, mockLabTests, mockBookings, mockAdditionalAdvice } from '../data/mockData'
 
 export const prescriptionService = {
   /**
@@ -101,37 +101,70 @@ export const prescriptionService = {
     return res.data
   },
 
-  /**
-   * Update an existing medicine in the master DB catalog
-   */
   async updateMedicine(id, medData) {
-    if (isMockMode()) {
-      const index = mockMedicines.findIndex((m) => String(m.id) === String(id))
-      if (index !== -1) {
-        mockMedicines[index] = { ...mockMedicines[index], ...medData }
-        return { success: true, data: mockMedicines[index] }
-      }
-      return { success: false, error: 'Medicine not found' }
-    }
-
+    if (isMockMode()) return { success: true, data: { id, ...medData } }
     const res = await api.put(`/medicines/${id}`, medData)
     return res.data
   },
-
-  /**
-   * Delete a medicine from the master DB catalog
-   */
   async deleteMedicine(id) {
-    if (isMockMode()) {
-      const index = mockMedicines.findIndex((m) => String(m.id) === String(id))
-      if (index !== -1) {
-        mockMedicines.splice(index, 1)
-        return { success: true }
-      }
-      return { success: false, error: 'Medicine not found' }
-    }
-
+    if (isMockMode()) return { success: true }
     const res = await api.delete(`/medicines/${id}`)
+    return res.data
+  },
+  async updateLabTest(id, testData) {
+    if (isMockMode()) return { success: true, data: { id, ...testData } }
+    const res = await api.put(`/lab-tests/${id}`, testData)
+    return res.data
+  },
+  async deleteLabTest(id) {
+    if (isMockMode()) return { success: true }
+    const res = await api.delete(`/lab-tests/${id}`)
+    return res.data
+  },
+  async getAdditionalAdvice({ department_id, search } = {}) {
+    if (isMockMode()) {
+      let list = [...mockAdditionalAdvice]
+      if (department_id && department_id !== 'all') {
+        const dId = Number(department_id)
+        list = list.filter((a) => !a.department_id || a.department_id === dId)
+      }
+      if (search && search.trim()) {
+        const q = search.trim().toLowerCase()
+        list = list.filter((a) => a.advice.toLowerCase().includes(q))
+      }
+      return { data: list }
+    }
+    const params = new URLSearchParams()
+    if (department_id && department_id !== 'all') params.append('department_id', department_id)
+    if (search) params.append('search', search)
+    const res = await api.get(`/additional-advice?${params.toString()}`)
+    return res.data
+  },
+  async addAdditionalAdvice(adviceData) {
+    if (isMockMode()) {
+      const exists = mockAdditionalAdvice.some((ex) => ex.advice.toLowerCase() === adviceData.advice.toLowerCase())
+      if (!exists) {
+        const newItem = {
+          id: Date.now() + Math.random(),
+          department_id: adviceData.department_id ? Number(adviceData.department_id) : 1,
+          advice: adviceData.advice,
+        }
+        mockAdditionalAdvice.push(newItem)
+        return { success: true, data: newItem }
+      }
+      return { success: true }
+    }
+    const res = await api.post('/additional-advice', adviceData)
+    return res.data
+  },
+  async updateAdditionalAdvice(id, adviceData) {
+    if (isMockMode()) return { success: true, data: { id, ...adviceData } }
+    const res = await api.put(`/additional-advice/${id}`, adviceData)
+    return res.data
+  },
+  async deleteAdditionalAdvice(id) {
+    if (isMockMode()) return { success: true }
+    const res = await api.delete(`/additional-advice/${id}`)
     return res.data
   },
 }

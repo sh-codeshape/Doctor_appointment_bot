@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -10,62 +12,15 @@ services:
       POSTGRES_DB: docbot
     volumes:
       - docbot-postgres-data:/var/lib/postgresql/data
-      - ./backup.sql:/docker-entrypoint-initdb.d/01_backup.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docbot -d docbot"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     container_name: docbot-redis
-    command: ["redis-server", "--maxmemory", "50mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6379:6379"
     volumes:
       - docbot-redis-data:/data
-    restart: unless-stopped
-
-  dbmate:
-    image: amacneil/dbmate:latest
-    container_name: docbot-dbmate
-    command: ["up"]
-    environment:
-      DATABASE_URL: postgres://docbot:docbot@postgres:5432/docbot?sslmode=disable
-    volumes:
-      - ${DBMATE_PATH}:/db/migrations
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  pgbackups:
-    image: prodrigestivill/postgres-backup-local
-    restart: always
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=docbot
-      - POSTGRES_USER=docbot
-      - POSTGRES_PASSWORD=docbot
-      - SCHEDULE=@daily
-      - BACKUP_KEEP_DAYS=7
-    volumes:
-      - ./backups:/backups
-    depends_on:
-      - postgres
-
-  api:
-    image: ${DOCKERHUB_USERNAME}/docbot-api:latest
-    container_name: docbot-api
-    ports:
-      - "3000:3000"
-    env_file:
-      - ./apps/api/.env
-    depends_on:
-      - postgres
-      - redis
     restart: unless-stopped
 
 volumes:

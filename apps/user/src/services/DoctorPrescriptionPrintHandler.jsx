@@ -124,48 +124,163 @@ export class DoctorPrescriptionPrintHandler {
     const prescribedMeds = rx.medicines || []
     const orderedTests = rx.tests || []
 
-    // Build ONLY Prescribed Medicines Rows HTML
-    let medRowsHTML = ''
-    if (prescribedMeds && prescribedMeds.length > 0) {
-      prescribedMeds.forEach((pm, idx) => {
-        const srNo = idx + 1
-        const name = pm.name || pm.medicine_name || ''
-        const dosage = pm.dosage || '—'
-        const frequency = pm.frequency || '—'
-        const duration = pm.duration || '—'
-        const remarks = pm.remarks || ''
+    const adviceList = rx.additional_advice || []
 
-        medRowsHTML += `<tr>
-          <td style="text-align:center; font-weight:600;">${srNo}</td>
-          <td style="font-weight:700; color:#0369a1;">${name}</td>
-          <td>${dosage}</td>
-          <td>${frequency}</td>
-          <td>${duration}</td>
-          <td>${remarks}</td>
-          <td style="text-align:center;"><div class="chk">✓</div></td>
-        </tr>`
-      })
-    } else {
-      medRowsHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No medicines prescribed on this slip</td></tr>`
+    const genMeds = prescribedMeds.filter(m => !m.target || m.target === 'General')
+    const femMeds = prescribedMeds.filter(m => m.target === 'Female Partner')
+    const malMeds = prescribedMeds.filter(m => m.target === 'Male Partner')
+
+    const genTests = orderedTests.filter(t => !t.target || t.target === 'General')
+    const femTests = orderedTests.filter(t => t.target === 'Female Partner')
+    const malTests = orderedTests.filter(t => t.target === 'Male Partner')
+
+    const renderMedTable = (meds, isFemale) => {
+      const bg = isFemale ? '#fce7f3' : '#dbeafe'
+      const border = isFemale ? '#f9a8d4' : '#93c5fd'
+      const title = isFemale ? '♀ FEMALE PARTNER MEDICATIONS' : '♂ MALE PARTNER MEDICATIONS'
+      
+      let html = `
+  <div class="tbl-wrap" style="border-color:${border}; margin-bottom:0;">
+    <div class="tbl-header" style="background:${bg}; border-color:${border}; color:#0f172a;">
+      <span>${title}</span>
+    </div>
+    <table class="p-tbl">
+      <thead>
+        <tr>
+          <th style="width:30px; text-align:center;">Sr.No.</th>
+          <th>Medicine Name</th>
+          <th style="width:60px;">Dosage</th>
+          <th style="width:70px;">Frequency</th>
+          <th style="width:50px;">Duration</th>
+          <th style="width:80px;">Remarks</th>
+          <th style="width:25px; text-align:center;">☐</th>
+        </tr>
+      </thead>
+      <tbody>`
+      if (meds.length === 0) {
+        html += `<tr><td colspan="7" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No medications</td></tr>`
+      } else {
+        meds.forEach((pm, idx) => {
+          html += `<tr>
+            <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+            <td style="font-weight:700; color:#0369a1;">${pm.name || pm.medicine_name || ''}</td>
+            <td>${pm.dosage || '—'}</td>
+            <td>${pm.frequency || '—'}</td>
+            <td>${pm.duration || '—'}</td>
+            <td>${pm.remarks || ''}</td>
+            <td style="text-align:center;"><div class="chk"></div></td>
+          </tr>`
+        })
+      }
+      html += `</tbody></table></div>`
+      return html
     }
 
-    // Build ONLY Ordered Lab Tests Rows HTML
-    let testRowsHTML = ''
-    if (orderedTests && orderedTests.length > 0) {
-      orderedTests.forEach((pt, idx) => {
-        const srNo = idx + 1
-        const name = pt.name || pt.test_name || ''
-        const remarks = pt.remarks || ''
-
-        testRowsHTML += `<tr>
-          <td style="text-align:center; font-weight:600;">${srNo}</td>
-          <td style="font-weight:700; color:#0369a1;">${name}</td>
-          <td>${remarks}</td>
-          <td style="text-align:center;"><div class="chk">✓</div></td>
+    const renderGenMedTable = (meds) => {
+      if (meds.length === 0) return ''
+      let html = `
+  <div class="tbl-wrap" style="margin-bottom:6px;">
+    <div class="tbl-header"><span>GENERAL MEDICATIONS</span></div>
+    <table class="p-tbl">
+      <thead>
+        <tr>
+          <th style="width:38px; text-align:center;">Sr. No.</th>
+          <th>Medicine Name</th>
+          <th style="width:90px;">Dosage</th>
+          <th style="width:100px;">Frequency</th>
+          <th style="width:80px;">Duration</th>
+          <th style="width:120px;">Remarks</th>
+          <th style="width:38px; text-align:center;">☐</th>
+        </tr>
+      </thead>
+      <tbody>`
+      meds.forEach((pm, idx) => {
+        html += `<tr>
+          <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+          <td style="font-weight:700; color:#0369a1;">${pm.name || pm.medicine_name || ''}</td>
+          <td>${pm.dosage || '—'}</td>
+          <td>${pm.frequency || '—'}</td>
+          <td>${pm.duration || '—'}</td>
+          <td>${pm.remarks || ''}</td>
+          <td style="text-align:center;"><div class="chk"></div></td>
         </tr>`
       })
+      html += `</tbody></table></div>`
+      return html
+    }
+
+    const renderTestTable = (tests, isFemale) => {
+      const bg = isFemale ? '#fce7f3' : '#dbeafe'
+      const border = isFemale ? '#f9a8d4' : '#93c5fd'
+      const title = isFemale ? '♀ FEMALE TESTS' : '♂ MALE TESTS'
+      
+      let html = `
+  <div class="tbl-wrap" style="border-color:${border}; margin-bottom:0;">
+    <div class="tbl-header" style="background:${bg}; border-color:${border}; color:#0f172a;">
+      <span>${title}</span>
+    </div>
+    <table class="p-tbl">
+      <thead>
+        <tr>
+          <th style="width:30px; text-align:center;">Sr.No.</th>
+          <th>Test Name</th>
+          <th style="width:120px;">Remarks</th>
+          <th style="width:25px; text-align:center;">☐</th>
+        </tr>
+      </thead>
+      <tbody>`
+      if (tests.length === 0) {
+        html += `<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No tests</td></tr>`
+      } else {
+        tests.forEach((pt, idx) => {
+          html += `<tr>
+            <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+            <td style="font-weight:700; color:#0369a1;">${pt.name || pt.test_name || ''}</td>
+            <td>${pt.remarks || ''}</td>
+            <td style="text-align:center;"><div class="chk"></div></td>
+          </tr>`
+        })
+      }
+      html += `</tbody></table></div>`
+      return html
+    }
+
+    const renderGenTestTable = (tests) => {
+      if (tests.length === 0) return ''
+      let html = `
+  <div class="tbl-wrap" style="margin-bottom:6px;">
+    <div class="tbl-header"><span>GENERAL TESTS</span></div>
+    <table class="p-tbl">
+      <thead>
+        <tr>
+          <th style="width:38px; text-align:center;">Sr. No.</th>
+          <th>Test Name</th>
+          <th style="width:250px;">Remarks</th>
+          <th style="width:38px; text-align:center;">☐</th>
+        </tr>
+      </thead>
+      <tbody>`
+      tests.forEach((pt, idx) => {
+        html += `<tr>
+          <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+          <td style="font-weight:700; color:#0369a1;">${pt.name || pt.test_name || ''}</td>
+          <td>${pt.remarks || ''}</td>
+          <td style="text-align:center;"><div class="chk"></div></td>
+        </tr>`
+      })
+      html += `</tbody></table></div>`
+      return html
+    }
+
+    let adviceHTML = ''
+    if (adviceList && adviceList.length > 0) {
+      adviceHTML = `<ul style="padding-left:16px; margin:4px 0; font-size:10px; color:#1e293b;">`
+      adviceList.forEach(adv => {
+        adviceHTML += `<li style="margin-bottom:2px;">${adv.advice || adv}</li>`
+      })
+      adviceHTML += `</ul>`
     } else {
-      testRowsHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No lab tests requested on this slip</td></tr>`
+      adviceHTML = `<div style="color:#64748b; font-style:italic; font-size:10px; margin-top:4px;">No additional advice</div>`
     }
 
     return `<!DOCTYPE html>
@@ -228,7 +343,7 @@ export class DoctorPrescriptionPrintHandler {
   .vital-cell { height: 18px; font-size: 10px; font-weight: 700; color: #0f172a; display:flex; align-items:center; justify-content:center; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
   .vital-cell:last-child { border-right: none; }
   /* Doctor Notes */
-  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 220px; }
+  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 140px; }
   .rx-title { font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; }
   .notes-text { font-size: 11px; color: #1e293b; font-weight: 600; line-height: 1.5; white-space: pre-wrap; }
   .ruled-line { border-bottom: 1px solid #e2e8f0; margin-top: 22px; height: 1px; }
@@ -242,6 +357,7 @@ export class DoctorPrescriptionPrintHandler {
   table.p-tbl td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; color: #0f172a; height: 18px; overflow: hidden; white-space: nowrap; }
   table.p-tbl td:last-child { border-right: none; }
   .chk { display: inline-block; width: 11px; height: 11px; border: 1.2px solid #0369a1; border-radius: 2px; text-align: center; line-height: 9px; font-size: 8px; font-weight: 800; color: #0369a1; }
+  .section-full-header { display: flex; justify-content: space-between; align-items: flex-end; background: #f1f5f9; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 10px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
   /* Signature */
   .sig-area { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding-top: 4px; }
   .sig-box { width: 190px; height: 42px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fafafa; display: flex; align-items: flex-end; padding: 3px 8px; }
@@ -318,52 +434,44 @@ export class DoctorPrescriptionPrintHandler {
   <!-- Doctor Notes -->
   <div class="rx-box">
     <div class="rx-title">DOCTOR'S NOTES / CLINICAL DIAGNOSIS</div>
-    ${rxNotes ? `<div class="notes-text">${rxNotes}</div>` : `<div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div>`}
+    ${rxNotes ? `<div class="notes-text">${rxNotes}</div>` : `<div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div>`}
   </div>
 
-  <!-- Prescribed Medicines Table -->
-  <div class="tbl-wrap">
-    <div class="tbl-header">
-      <span>PRESCRIBED MEDICINES</span>
-      <span class="tbl-sub">(Only selected medicines)</span>
-    </div>
-    <table class="p-tbl">
-      <thead>
-        <tr>
-          <th style="width:38px; text-align:center;">Sr. No.</th>
-          <th>Medicine Name</th>
-          <th style="width:90px;">Dosage</th>
-          <th style="width:100px;">Frequency</th>
-          <th style="width:80px;">Duration</th>
-          <th style="width:120px;">Remarks</th>
-          <th style="width:38px; text-align:center;">Mark</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${medRowsHTML}
-      </tbody>
-    </table>
+  <!-- Prescribed Medicines Section -->
+  <div class="section-full-header">
+    <span>PRESCRIBED MEDICINES</span>
+    <span style="font-weight:600; font-size:8.5px; color:#475569;">(Only selected medicines)</span>
+  </div>
+  ${renderGenMedTable(genMeds)}
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+    ${renderMedTable(femMeds, true)}
+    ${renderMedTable(malMeds, false)}
   </div>
 
-  <!-- Ordered Lab Tests Table -->
-  <div class="tbl-wrap">
-    <div class="tbl-header">
-      <span>ORDERED LAB TESTS</span>
-      <span class="tbl-sub">(Only selected tests)</span>
+  <!-- Ordered Lab Tests Section -->
+  <div class="section-full-header">
+    <span>ORDERED LAB TESTS</span>
+  </div>
+  ${renderGenTestTable(genTests)}
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+    ${renderTestTable(femTests, true)}
+    ${renderTestTable(malTests, false)}
+  </div>
+
+  <!-- Additional Advice + Next Follow-up Section -->
+  <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 6px; margin-bottom: 8px;">
+    <div style="border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px 8px;">
+      <div style="font-size:10px; font-weight:800; color:#0369a1; text-transform:uppercase; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:2px;">ADDITIONAL ADVICE / LIFESTYLE RECOMMENDATIONS</div>
+      ${adviceHTML}
     </div>
-    <table class="p-tbl">
-      <thead>
-        <tr>
-          <th style="width:38px; text-align:center;">Sr. No.</th>
-          <th>Test Name</th>
-          <th style="width:250px;">Remarks</th>
-          <th style="width:38px; text-align:center;">Mark</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${testRowsHTML}
-      </tbody>
-    </table>
+    <div style="border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px 8px; background:#f8fafc;">
+      <div style="font-size:10px; font-weight:800; color:#0369a1; text-transform:uppercase; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:2px;">NEXT FOLLOW-UP</div>
+      <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
+        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Date:</span> <span>________________</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Time:</span> <span>________________</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Mode:</span> <span>Clinic / Video</span></div>
+      </div>
+    </div>
   </div>
 
   <!-- Signature -->

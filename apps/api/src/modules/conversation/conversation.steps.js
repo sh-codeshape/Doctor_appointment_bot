@@ -85,7 +85,7 @@ export const MESSAGES = {
     `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Which visit number is this for the patient?*\nमरीज़ की बांझपन इलाज की यह कौन सी विजिट (बार) है?\n\n2️⃣ 2nd Visit (दूसरी बार)\n3️⃣ 3rd Visit (तीसरी बार)\n4️⃣ 4th Visit (चौथी बार)\n5️⃣ 5th Visit (पांचवीं बार)\n6️⃣ 6th Visit (छठी बार)\n7️⃣ 7th Visit (सातवीं बार)\n8️⃣ 8th Visit (आठवीं बार)\n9️⃣ 9th Visit (नौवीं बार)\n🔟 10th Visit (दसवीं बार)\n1️⃣1️⃣ Other Visit / Any other visit number (अन्य)\n\n0️⃣ Back | 00 Main Menu`,
 
   infertilityVisitOtherPrompt: () =>
-    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15.....) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
+    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15......) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
 
   doctors: (deptName, docs) => {
     const bilingualDept = languageService.formatBilingual(deptName, null, {
@@ -259,13 +259,13 @@ export const MESSAGES = {
     `ℹ️ *General Query / Information*\nसामान्य जानकारी / अन्य जानकारी\n\n*Hospital Timings / अस्पताल का समय:*\n🕘 24x7 \n🕘 Sunday: Emergency only\n\n*Address / पता:*\n📍 KG Nanda Hospital, 
     Bichhiya Kala, Chandauli \n\n*Services / सेवाएं:*\n• OPD Consultation\n• Hospitalization\n• Emergency Care\n• Online Medicine Delivery\n\n0️⃣ Main Menu`,
   support: () =>
-    `📞 *Talk to Support*\nअस्पताल सहायता केंद्र से संपर्क करें\n\n*For assistance, contact our helpline:*\n\nFirst Helpline: 8840376333\n Second Helpline: 9838850287\n\n0️⃣ Main Menu`,
+    `📞 *Talk to Support*\nअस्पताल सहायता केंद्र से संपर्क करें\n\n*For assistance, contact our helpline:*\n\n1️⃣ First Helpline: 8840376333\n2️⃣ Second Helpline: 9838850287\n\n0️⃣ Main Menu`,
 
   email: () =>
     `📧 *Email Help / ईमेल सहायता*\n\n*For email assistance, contact us at:*\n📧 admin@kgnandahospital.com\n\n0️⃣ Main Menu`,
 
   dailyBookingLimitExceeded: (uhid = "") =>
-    `❌ *Appointment Already Booked / अपॉइंटमेंट पहले से बुक है*\n\n*Your appointment has already been generated for this date. ${uhid ? ` (UHID: ${uhid})` : ""} *\nआपका रजिस्ट्रेशन${uhid ? ` (UHID: ${uhid})` : ""} सफलतापूर्वक दर्ज है और इस दिनांक की OPD पहले से ही बुक है।\n\n0️⃣ Main Menu`,
+    `❌ *Booking Limit Reached / बुक सीमा पूरी*\n\n*A booking already exists for this patient${uhid ? ` (UHID: ${uhid})` : ""} on this date. Only 1 request per patient is allowed per day.*\nइस मरीज${uhid ? ` (UHID: ${uhid})` : ""} का इस तारीख के लिए पहले से अपॉइंटमेंट दर्ज है। एक मरीज के लिए प्रतिदिन केवल 1 अनुरोध की अनुमति है।\n\n0️⃣ Main Menu`,
 
   invalidInput: () =>
     `❌ Invalid input. Please try again or type "menu".\nगलत इनपुट। कृपया पुनः प्रयास करें।`,

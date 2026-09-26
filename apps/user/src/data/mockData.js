@@ -557,3 +557,10 @@ export const mockLabTests = [
   { id: 17, department_id: 4, name: 'PSA (Prostate Specific Antigen)', category: 'Biochemistry' },
 ]
 
+// ── Master Additional Advice Catalog ──
+export const mockAdditionalAdvice = [
+  { id: 1, department_id: 1, advice: 'Drink plenty of water and stay hydrated.' },
+  { id: 2, department_id: 1, advice: 'Avoid lifting heavy weights for the next 2 weeks.' },
+  { id: 3, department_id: 1, advice: 'Maintain a protein-rich diet.' },
+  { id: 4, department_id: 1, advice: 'Follow up after 7 days with reports.' },
+]

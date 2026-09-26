@@ -43,6 +43,7 @@ export default function PrescriptionPage() {
   const [doctorNotes, setDoctorNotes] = useState('')
   const [selectedMeds, setSelectedMeds] = useState([])
   const [selectedTests, setSelectedTests] = useState([])
+  const [selectedAdvice, setSelectedAdvice] = useState([])
 
   // Search & Filters
   const [deptFilter, setDeptFilter] = useState('all')
@@ -52,40 +53,56 @@ export default function PrescriptionPage() {
   const [testSearch, setTestSearch] = useState('')
   const [availableTests, setAvailableTests] = useState([])
 
+  const [adviceSearch, setAdviceSearch] = useState('')
+  const [availableAdvice, setAvailableAdvice] = useState([])
+
   const [customMedName, setCustomMedName] = useState('')
   const [customTestName, setCustomTestName] = useState('')
+  const [customAdviceName, setCustomAdviceName] = useState('')
+  const [addTarget, setAddTarget] = useState('General') // 'General' | 'Female Partner' | 'Male Partner'
 
-  // Load booking details & existing prescription
+  // Load booking details & existing prescription + catalogs in parallel
   useEffect(() => {
     let active = true
     async function loadData() {
       try {
         setIsLoading(true)
-        let data = await bookingService.getBooking(bookingId)
-        if (data) {
-          try {
-            data = await printService.getSlipData(data)
-          } catch (e) {
-            console.warn('Could not enrich patient slip data', e)
+        const data = await bookingService.getBooking(bookingId)
+        if (!active || !data) return
+
+        // Enrich the booking AND fetch all 3 catalogs in parallel
+        const deptId = data.department_id ? String(data.department_id) : 'all'
+        const catalogParams = { department_id: deptId === 'all' ? null : deptId, search: '' }
+
+        const [enriched, medsRes, testsRes, adviceRes] = await Promise.all([
+          printService.getSlipData(data).catch(() => data),
+          prescriptionService.getMedicines(catalogParams).catch(() => ({ data: [] })),
+          prescriptionService.getLabTests(catalogParams).catch(() => ({ data: [] })),
+          prescriptionService.getAdditionalAdvice(catalogParams).catch(() => ({ data: [] })),
+        ])
+
+        if (!active) return
+
+        setBooking(enriched)
+        if (data.department_id) setDeptFilter(deptId)
+        setAvailableMeds(medsRes.data || [])
+        setAvailableTests(testsRes.data || [])
+        setAvailableAdvice(adviceRes.data || [])
+
+        const rx = enriched.prescription || enriched.meta?.prescription || {}
+        setVitals(
+          rx.vitals || {
+            bp: '',
+            pulse: '',
+            temp: '',
+            weight: '',
+            spo2: '',
           }
-        }
-        if (active && data) {
-          setBooking(data)
-          if (data.department_id) setDeptFilter(String(data.department_id))
-          const rx = data.prescription || data.meta?.prescription || {}
-          setVitals(
-            rx.vitals || {
-              bp: '',
-              pulse: '',
-              temp: '',
-              weight: '',
-              spo2: '',
-            }
-          )
-          setDoctorNotes(rx.doctor_notes || data.problemDescription || data.problem_description || '')
-          setSelectedMeds(rx.medicines || [])
-          setSelectedTests(rx.tests || [])
-        }
+        )
+        setDoctorNotes(rx.doctor_notes || data.problemDescription || data.problem_description || '')
+        setSelectedMeds(rx.medicines || [])
+        setSelectedTests(rx.tests || [])
+        setSelectedAdvice(rx.additional_advice || rx.advice || [])
       } catch (err) {
         toast.error('Failed to load patient consultation data')
       } finally {
@@ -98,31 +115,40 @@ export default function PrescriptionPage() {
     }
   }, [bookingId])
 
-  // Fetch Catalog Medicines on filter/search change
-  useEffect(() => {
-    let active = true
+  // Ref to track if initial catalog load is done (handled in the main useEffect above)
+  const catalogLoaded = React.useRef(false)
+
+  // Re-fetch catalogs only when the user changes search/filter AFTER initial load
+  const fetchMedicines = () => {
     prescriptionService
       .getMedicines({ department_id: deptFilter === 'all' ? null : deptFilter, search: medSearch })
-      .then((res) => {
-        if (active) setAvailableMeds(res.data || [])
-      })
-    return () => {
-      active = false
-    }
-  }, [deptFilter, medSearch])
-
-  // Fetch Catalog Lab Tests on search change
-  useEffect(() => {
-    let active = true
+      .then((res) => setAvailableMeds(res.data || []))
+  }
+  const fetchTests = () => {
     prescriptionService
       .getLabTests({ department_id: deptFilter === 'all' ? null : deptFilter, search: testSearch })
-      .then((res) => {
-        if (active) setAvailableTests(res.data || [])
-      })
-    return () => {
-      active = false
-    }
+      .then((res) => setAvailableTests(res.data || []))
+  }
+  const fetchAdvice = () => {
+    prescriptionService
+      .getAdditionalAdvice({ department_id: deptFilter === 'all' ? null : deptFilter, search: adviceSearch })
+      .then((res) => setAvailableAdvice(res.data || []))
+  }
+
+  useEffect(() => {
+    if (!catalogLoaded.current) { catalogLoaded.current = true; return }
+    fetchMedicines()
+  }, [deptFilter, medSearch])
+
+  useEffect(() => {
+    if (!catalogLoaded.current) return
+    fetchTests()
   }, [deptFilter, testSearch])
+
+  useEffect(() => {
+    if (!catalogLoaded.current) return
+    fetchAdvice()
+  }, [deptFilter, adviceSearch])
 
   // Handlers for adding medicine
   const handleAddMedicine = (medObj) => {
@@ -130,8 +156,8 @@ export default function PrescriptionPage() {
       toast.error('Maximum 15 medicines allowed per slip')
       return
     }
-    if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase())) {
-      toast.error('Medicine already added')
+    if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase() && m.target === addTarget)) {
+      toast.error(`Medicine already added for ${addTarget}`)
       return
     }
     const newItem = {
@@ -141,6 +167,7 @@ export default function PrescriptionPage() {
       frequency: medObj.default_frequency || 'Twice daily',
       duration: medObj.default_duration || '5 days',
       remarks: 'After food',
+      target: addTarget,
     }
     setSelectedMeds([...selectedMeds, newItem])
   }
@@ -166,31 +193,21 @@ export default function PrescriptionPage() {
     setSelectedMeds(selectedMeds.filter((_, i) => i !== index))
   }
 
-  const handleDeleteMedicine = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}" from the catalog?`)) return
-    try {
-      await prescriptionService.deleteMedicine(id)
-      setAvailableMeds((prev) => prev.filter((m) => m.id !== id))
-      toast.success(`${name} deleted from catalog`)
-    } catch (err) {
-      toast.error('Failed to delete medicine')
-    }
-  }
-
   // Handlers for adding test
   const handleAddTest = (testObj) => {
     if (selectedTests.length >= 10) {
       toast.error('Maximum 10 lab tests allowed per slip')
       return
     }
-    if (selectedTests.some((t) => t.name.toLowerCase() === testObj.name.toLowerCase())) {
-      toast.error('Test already added')
+    if (selectedTests.some((t) => t.name.toLowerCase() === testObj.name.toLowerCase() && t.target === addTarget)) {
+      toast.error(`Test already added for ${addTarget}`)
       return
     }
     const newItem = {
       id: testObj.id || Date.now(),
       name: testObj.name,
       remarks: '',
+      target: addTarget,
     }
     setSelectedTests([...selectedTests, newItem])
   }
@@ -211,39 +228,103 @@ export default function PrescriptionPage() {
     setSelectedTests(selectedTests.filter((_, i) => i !== index))
   }
 
+  // Handlers for adding advice
+  const handleAddAdvice = (adviceObj) => {
+    if (selectedAdvice.length >= 10) {
+      toast.error('Maximum 10 advice items allowed per slip')
+      return
+    }
+    if (selectedAdvice.some((a) => a.advice.toLowerCase() === adviceObj.advice.toLowerCase())) {
+      toast.error('Advice already added')
+      return
+    }
+    const newItem = {
+      id: adviceObj.id || Date.now(),
+      advice: adviceObj.advice,
+    }
+    setSelectedAdvice([...selectedAdvice, newItem])
+  }
+
+  const handleAddCustomAdvice = () => {
+    if (!customAdviceName.trim()) return
+    handleAddAdvice({ advice: customAdviceName.trim() })
+    setCustomAdviceName('')
+  }
+
+  const handleUpdateAdvice = (index, field, val) => {
+    const updated = [...selectedAdvice]
+    updated[index][field] = val
+    setSelectedAdvice(updated)
+  }
+
+  const handleRemoveAdvice = (index) => {
+    setSelectedAdvice(selectedAdvice.filter((_, i) => i !== index))
+  }
+
+  const handleDeleteCatalogMed = async (e, id) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this medicine from the catalog?')) return
+    try {
+      await prescriptionService.deleteMedicine(id)
+      toast.success('Medicine deleted from catalog')
+      fetchMedicines()
+    } catch (err) {
+      toast.error('Failed to delete medicine')
+    }
+  }
+
+  const handleDeleteCatalogTest = async (e, id) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this test from the catalog?')) return
+    try {
+      await prescriptionService.deleteLabTest(id)
+      toast.success('Test deleted from catalog')
+      fetchTests()
+    } catch (err) {
+      toast.error('Failed to delete lab test')
+    }
+  }
+
+  const handleDeleteCatalogAdvice = async (e, id) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this advice from the catalog?')) return
+    try {
+      await prescriptionService.deleteAdditionalAdvice(id)
+      toast.success('Advice deleted from catalog')
+      fetchAdvice()
+    } catch (err) {
+      toast.error('Failed to delete advice')
+    }
+  }
+
   const handlePrint = async () => {
     try {
       const targetDeptId = booking?.department_id || (deptFilter !== 'all' ? deptFilter : 1)
 
-      // 1. Auto-add any new medicines & tests to master DB catalog so doctors don't retype them
-      if (selectedMeds.length > 0 || selectedTests.length > 0) {
+      // Helper to check if an ID is a temporary timestamp (newly added custom item)
+      const isNew = (id) => typeof id === 'number' && id > 1000000000000
+
+      // 1. Auto-add new or update existing catalog items so doctors don't retype defaults
+      if (selectedMeds.length > 0 || selectedTests.length > 0 || selectedAdvice.length > 0) {
         await Promise.allSettled([
           ...selectedMeds.map((med) => {
-            const isExisting = availableMeds.some((m) => m.id === med.id)
-            if (isExisting) {
-              return prescriptionService.updateMedicine(med.id, {
-                default_dosage: med.dosage,
-                default_frequency: med.frequency,
-                default_duration: med.duration,
-                default_remarks: med.remarks,
-              })
-            } else {
-              return prescriptionService.addMedicine({
-                department_id: targetDeptId,
-                name: med.name,
-                default_dosage: med.dosage,
-                default_frequency: med.frequency,
-                default_duration: med.duration,
-                default_remarks: med.remarks,
-              })
-            }
-          }),
-          ...selectedTests.map((test) =>
-            prescriptionService.addLabTest({
+            const data = {
               department_id: targetDeptId,
-              name: test.name,
-            })
-          ),
+              name: med.name,
+              default_dosage: med.dosage,
+              default_frequency: med.frequency,
+              default_duration: med.duration,
+            }
+            return isNew(med.id) ? prescriptionService.addMedicine(data) : prescriptionService.updateMedicine(med.id, data)
+          }),
+          ...selectedTests.map((test) => {
+            const data = { department_id: targetDeptId, name: test.name }
+            return isNew(test.id) ? prescriptionService.addLabTest(data) : prescriptionService.updateLabTest(test.id, data)
+          }),
+          ...selectedAdvice.map((adv) => {
+            const data = { department_id: targetDeptId, advice: adv.advice }
+            return isNew(adv.id) ? prescriptionService.addAdditionalAdvice(data) : prescriptionService.updateAdditionalAdvice(adv.id, data)
+          }),
         ])
       }
 
@@ -255,6 +336,7 @@ export default function PrescriptionPage() {
           doctor_notes: doctorNotes,
           medicines: selectedMeds,
           tests: selectedTests,
+          additional_advice: selectedAdvice,
         },
       }
 
@@ -371,10 +453,27 @@ export default function PrescriptionPage() {
 
       {/* 2. Prescribe Medicines */}
       <div className={styles.sectionCard}>
-        <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeader} style={{ flexWrap: 'wrap', gap: 8 }}>
           <span className={styles.sectionTitle}>
             <Pill size={16} color="var(--accent-blue)" /> Prescribe Medicines ({selectedMeds.length}/15)
           </span>
+          <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', alignSelf: 'center', marginRight: 4 }}>Adding for:</span>
+            {['General', 'Female Partner', 'Male Partner'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setAddTarget(t)}
+                style={{
+                  padding: '4px 12px', borderRadius: 16, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                  background: addTarget === t ? (t === 'Female Partner' ? '#ec4899' : t === 'Male Partner' ? '#3b82f6' : 'var(--accent-blue)') : 'var(--bg-elevated)',
+                  color: addTarget === t ? '#fff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t === 'Female Partner' ? '♀ Female' : t === 'Male Partner' ? '♂ Male' : '⚕ General'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.searchControls}>
@@ -442,18 +541,9 @@ export default function PrescriptionPage() {
         {/* Quick Add Chips */}
         <div className={styles.chipsRow}>
           {availableMeds.slice(0, 15).map((m) => (
-            <div key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <div className={styles.chip} onClick={() => handleAddMedicine(m)} style={{ margin: 0 }}>
-                <Plus size={12} /> {m.name}
-              </div>
-              <button 
-                type="button"
-                onClick={() => handleDeleteMedicine(m.id, m.name)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
-                title="Delete medicine from catalog"
-              >
-                <Trash2 size={14} />
-              </button>
+            <div key={m.id} className={styles.chip} onClick={() => handleAddMedicine(m)}>
+              <Plus size={12} /> <span style={{ flex: 1 }}>{m.name}</span>
+              <Trash2 size={12} style={{ color: '#ef4444', marginLeft: 6 }} onClick={(e) => handleDeleteCatalogMed(e, m.id)} />
             </div>
           ))}
         </div>
@@ -465,6 +555,7 @@ export default function PrescriptionPage() {
               <tr>
                 <th style={{ width: 30 }}>#</th>
                 <th>Medicine Name</th>
+                <th style={{ width: 90 }}>For</th>
                 <th style={{ width: 100 }}>Dosage</th>
                 <th style={{ width: 130 }}>Frequency</th>
                 <th style={{ width: 100 }}>Duration</th>
@@ -484,6 +575,19 @@ export default function PrescriptionPage() {
                       onChange={(e) => handleUpdateMed(index, 'name', e.target.value)}
                       placeholder="Medicine name..."
                     />
+                  </td>
+                  <td>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                      background: item.target === 'Female Partner' ? '#fce7f3' : item.target === 'Male Partner' ? '#dbeafe' : '#f0fdf4',
+                      color: item.target === 'Female Partner' ? '#be185d' : item.target === 'Male Partner' ? '#1d4ed8' : '#166534',
+                      cursor: 'pointer',
+                    }} onClick={() => {
+                      const next = item.target === 'General' ? 'Female Partner' : item.target === 'Female Partner' ? 'Male Partner' : 'General'
+                      handleUpdateMed(index, 'target', next)
+                    }} title="Click to cycle: General → Female → Male">
+                      {item.target === 'Female Partner' ? '♀ Female' : item.target === 'Male Partner' ? '♂ Male' : '⚕ General'}
+                    </span>
                   </td>
                   <td>
                     <input
@@ -531,10 +635,27 @@ export default function PrescriptionPage() {
 
       {/* 3. Lab Tests Section */}
       <div className={styles.sectionCard}>
-        <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeader} style={{ flexWrap: 'wrap', gap: 8 }}>
           <span className={styles.sectionTitle}>
             <TestTube size={16} color="var(--accent-blue)" /> Lab Tests & Checkups ({selectedTests.length}/10)
           </span>
+          <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', alignSelf: 'center', marginRight: 4 }}>Adding for:</span>
+            {['General', 'Female Partner', 'Male Partner'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setAddTarget(t)}
+                style={{
+                  padding: '4px 12px', borderRadius: 16, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                  background: addTarget === t ? (t === 'Female Partner' ? '#ec4899' : t === 'Male Partner' ? '#3b82f6' : 'var(--accent-blue)') : 'var(--bg-elevated)',
+                  color: addTarget === t ? '#fff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t === 'Female Partner' ? '♀ Female' : t === 'Male Partner' ? '♂ Male' : '⚕ General'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.searchControls}>
@@ -590,7 +711,8 @@ export default function PrescriptionPage() {
         <div className={styles.chipsRow}>
           {availableTests.slice(0, 12).map((t) => (
             <div key={t.id} className={styles.chip} onClick={() => handleAddTest(t)}>
-              <Plus size={12} /> {t.name}
+              <Plus size={12} /> <span style={{ flex: 1 }}>{t.name}</span>
+              <Trash2 size={12} style={{ color: '#ef4444', marginLeft: 6 }} onClick={(e) => handleDeleteCatalogTest(e, t.id)} />
             </div>
           ))}
         </div>
@@ -602,6 +724,7 @@ export default function PrescriptionPage() {
               <tr>
                 <th style={{ width: 30 }}>#</th>
                 <th>Test Name</th>
+                <th style={{ width: 90 }}>For</th>
                 <th>Remarks / Instructions</th>
                 <th style={{ width: 34 }}></th>
               </tr>
@@ -620,6 +743,19 @@ export default function PrescriptionPage() {
                     />
                   </td>
                   <td>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                      background: t.target === 'Female Partner' ? '#fce7f3' : t.target === 'Male Partner' ? '#dbeafe' : '#f0fdf4',
+                      color: t.target === 'Female Partner' ? '#be185d' : t.target === 'Male Partner' ? '#1d4ed8' : '#166534',
+                      cursor: 'pointer',
+                    }} onClick={() => {
+                      const next = t.target === 'General' ? 'Female Partner' : t.target === 'Female Partner' ? 'Male Partner' : 'General'
+                      handleUpdateTest(index, 'target', next)
+                    }} title="Click to cycle: General → Female → Male">
+                      {t.target === 'Female Partner' ? '♀ Female' : t.target === 'Male Partner' ? '♂ Male' : '⚕ General'}
+                    </span>
+                  </td>
+                  <td>
                     <input
                       className={styles.input}
                       style={{ padding: '4px 8px', fontSize: 12 }}
@@ -630,6 +766,108 @@ export default function PrescriptionPage() {
                   </td>
                   <td>
                     <button className={styles.removeBtn} onClick={() => handleRemoveTest(index)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* 4. Additional Advice Section */}
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>
+            <Save size={16} color="var(--accent-blue)" /> Additional Advice / Lifestyle Recommendations ({selectedAdvice.length}/10)
+          </span>
+        </div>
+
+        <div className={styles.searchControls}>
+          <select
+            className={styles.select}
+            style={{ flex: 1, minWidth: 220 }}
+            value=""
+            onChange={(e) => {
+              const val = e.target.value
+              if (!val) return
+              const adv = availableAdvice.find((a) => String(a.id) === String(val))
+              if (adv) handleAddAdvice(adv)
+            }}
+          >
+            <option value="">-- Select Saved Advice ({availableAdvice.length}) --</option>
+            {availableAdvice.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.advice}
+              </option>
+            ))}
+          </select>
+
+          <div className={styles.searchBox}>
+            <Search size={15} className={styles.searchIcon} />
+            <input
+              className={`${styles.input} ${styles.searchInput}`}
+              placeholder="Search advice..."
+              value={adviceSearch}
+              onChange={(e) => setAdviceSearch(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              className={styles.input}
+              placeholder="Custom advice..."
+              style={{ width: 200 }}
+              value={customAdviceName}
+              onChange={(e) => setCustomAdviceName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomAdvice()}
+            />
+            <button
+              className={styles.saveBtn}
+              style={{ padding: '8px 12px', fontSize: 13 }}
+              onClick={handleAddCustomAdvice}
+            >
+              <Plus size={14} /> Add
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Add Advice Chips */}
+        <div className={styles.chipsRow}>
+          {availableAdvice.slice(0, 12).map((a) => (
+            <div key={a.id} className={styles.chip} onClick={() => handleAddAdvice(a)}>
+              <Plus size={12} /> <span style={{ flex: 1 }}>{a.advice}</span>
+              <Trash2 size={12} style={{ color: '#ef4444', marginLeft: 6 }} onClick={(e) => handleDeleteCatalogAdvice(e, a.id)} />
+            </div>
+          ))}
+        </div>
+
+        {/* Selected Advice Table */}
+        {selectedAdvice.length > 0 && (
+          <table className={styles.rxTable}>
+            <thead>
+              <tr>
+                <th style={{ width: 30 }}>#</th>
+                <th>Advice</th>
+                <th style={{ width: 34 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedAdvice.map((a, index) => (
+                <tr key={a.id || index}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <input
+                      className={styles.input}
+                      style={{ padding: '4px 8px', fontSize: 13, fontWeight: 600, color: 'var(--accent-blue)' }}
+                      value={a.advice || ''}
+                      onChange={(e) => handleUpdateAdvice(index, 'advice', e.target.value)}
+                      placeholder="Enter advice..."
+                    />
+                  </td>
+                  <td>
+                    <button className={styles.removeBtn} onClick={() => handleRemoveAdvice(index)}>
                       <Trash2 size={14} />
                     </button>
                   </td>
