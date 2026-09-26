@@ -85,7 +85,7 @@ export const MESSAGES = {
     `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Which visit number is this for the patient?*\nमरीज़ की बांझपन इलाज की यह कौन सी विजिट (बार) है?\n\n2️⃣ 2nd Visit (दूसरी बार)\n3️⃣ 3rd Visit (तीसरी बार)\n4️⃣ 4th Visit (चौथी बार)\n5️⃣ 5th Visit (पांचवीं बार)\n6️⃣ 6th Visit (छठी बार)\n7️⃣ 7th Visit (सातवीं बार)\n8️⃣ 8th Visit (आठवीं बार)\n9️⃣ 9th Visit (नौवीं बार)\n🔟 10th Visit (दसवीं बार)\n1️⃣1️⃣ Other Visit / Any other visit number (अन्य)\n\n0️⃣ Back | 00 Main Menu`,
 
   infertilityVisitOtherPrompt: () =>
-    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15......) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
+    `🩺 *Infertility Consultation / बांझपन परामर्श*\n\n*Please type your visit number:*\nकृपया अपनी विजिट संख्या (जैसे 11, 12, 15.....) टाइप करें:\n\n0️⃣ Back | 00 Main Menu`,
 
   doctors: (deptName, docs) => {
     const bilingualDept = languageService.formatBilingual(deptName, null, {
@@ -159,11 +159,8 @@ export const MESSAGES = {
     `📋 *REVIEW APPOINTMENT REQUEST*\n\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Preferred Date: ${data.date}\n\n👤 Patient: ${data.name}\n📱 Mobile: ${data.mobile}\n🎂 Age: ${data.age}\n⚧ Gender: ${data.gender}\n🏥 Type: ${data.isOld ? "Old / Existing Patient (पुराना मरीज)" : "New Patient (नया मरीज)"}\n📍 District: ${data.district}\n🏠 Address: ${data.address}${data.pinCode ? ` - ${data.pinCode}` : ""}\n🩺 Problem: ${data.problem}\n\n*Confirm details?*\n1️⃣ Confirm / पुष्टि करें\n2️⃣ Edit / बदलाव करें\n0️⃣ Main Menu`,
 
   appointmentConfirmed: (data) =>
-    `✅ *Appointment Request Received!*\n✅ अपॉइंटमेंट अनुरोध सफलतापूर्वक प्राप्त हुआ!\n\n🎫 *Token No:* ${data.tokenNumber}\n🆔 *UHID No:* ${data.uhid}\n\n📋 *Appointment Details / विवरण:*\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Date: ${data.date}\n👤 Name: ${data.name}\n📱 Mobile: ${data.mobile}\n\n📌 *Your booking has been confirmed.*\n📌 आपकी बुकिंग की पुष्टि कर दी गई है।।\n\n 📌 *Note : Kindly reach the hospital before 10:00 AM and submit your case file. Submission of the case file is mandatory.*\n\n 📌 कृपया हॉस्पिटल पहुँच कर अपनी केस फाइल सुबह १० बजे तक अवश्य जमा कर  दें  \n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें। `,
+    `✅ *Appointment Request Received!*\n✅ अपॉइंटमेंट अनुरोध सफलतापूर्वक प्राप्त हुआ!\n\n🎫 *Token No:* ${data.tokenNumber}\n🆔 *UHID No:* ${data.uhid}\n\n📋 *Appointment Details / विवरण:*\n👨‍⚕️ Doctor: ${data.doctorName}\n📅 Date: ${data.date}\n👤 Name: ${data.name}\n📱 Mobile: ${data.mobile}\n\n📌 *Your booking has been confirmed.*\n📌 आपकी बुकिंग की पुष्टि कर दी गई है।।\n\n👉 *To return to the main menu, send "Hi" or "Start".*\n👉 मुख्य मेनू पर लौटने के लिए "Hi" या "Start" भेजें।`,
 
-  //   confirmation:()=>{
-  //   return `sdf`
-  // }
   // Hospitalization
   hospWhoFor: (patients = []) => {
     let msg = `🏥 *HOSPITALIZATION / भर्ती किसके लिए है?*\n\n*Please choose a patient:* / कृपया मरीज चुनें:\n\n`;
@@ -262,13 +259,13 @@ export const MESSAGES = {
     `ℹ️ *General Query / Information*\nसामान्य जानकारी / अन्य जानकारी\n\n*Hospital Timings / अस्पताल का समय:*\n🕘 24x7 \n🕘 Sunday: Emergency only\n\n*Address / पता:*\n📍 KG Nanda Hospital, 
     Bichhiya Kala, Chandauli \n\n*Services / सेवाएं:*\n• OPD Consultation\n• Hospitalization\n• Emergency Care\n• Online Medicine Delivery\n\n0️⃣ Main Menu`,
   support: () =>
-    `📞 *Talk to Support*\nअस्पताल सहायता केंद्र से संपर्क करें\n\n*For assistance, contact our helpline:*\n\n1️⃣ First Helpline: 8840376333\n2️⃣ Second Helpline: 9838850287\n\n0️⃣ Main Menu`,
+    `📞 *Talk to Support*\nअस्पताल सहायता केंद्र से संपर्क करें\n\n*For assistance, contact our helpline:*\n\nFirst Helpline: 8840376333\n Second Helpline: 9838850287\n\n0️⃣ Main Menu`,
 
   email: () =>
     `📧 *Email Help / ईमेल सहायता*\n\n*For email assistance, contact us at:*\n📧 admin@kgnandahospital.com\n\n0️⃣ Main Menu`,
 
-  dailyBookingLimitExceeded: (uhid = '') =>
-    `❌ *Appointment Already Booked / अपॉइंटमेंट पहले से बुक है*\n\n*Your appointment has already been generated for this date. ${uhid ? ` (UHID: ${uhid})` : ''} *\nआपका रजिस्ट्रेशन${uhid ? ` (UHID: ${uhid})` : ''} सफलतापूर्वक दर्ज है और इस दिनांक की OPD पहले से ही बुक है।\n\n0️⃣ Main Menu`,
+  dailyBookingLimitExceeded: (uhid = "") =>
+    `❌ *Appointment Already Booked / अपॉइंटमेंट पहले से बुक है*\n\n*Your appointment has already been generated for this date. ${uhid ? ` (UHID: ${uhid})` : ""} *\nआपका रजिस्ट्रेशन${uhid ? ` (UHID: ${uhid})` : ""} सफलतापूर्वक दर्ज है और इस दिनांक की OPD पहले से ही बुक है।\n\n0️⃣ Main Menu`,
 
   invalidInput: () =>
     `❌ Invalid input. Please try again or type "menu".\nगलत इनपुट। कृपया पुनः प्रयास करें।`,
@@ -282,8 +279,6 @@ export const MESSAGES = {
   doctorUnavailable: () =>
     `❌ *Selected Doctor is Unavailable / डॉक्टर उपलब्ध नहीं हैं*\n*The selected doctor is currently offline or inactive. Please select another doctor.*\nचयनित डॉक्टर वर्तमान में उपलब्ध या सक्रिय नहीं हैं। कृपया दूसरे डॉक्टर का चयन करें।`,
 
-  maxPatientsReached: (doctorName = '', dateStr = '') =>
-    `⚠️ *OPD Limit Reached / ओपीडी सीमा समाप्त*${doctorName ? `\n👨‍⚕️ Doctor: ${doctorName}` : ''}${dateStr ? `\n📅 Date: ${dateStr}` : ''}\n\nDaily OPD limit has crossed, Kindly book for another day\nइस डेट की OPD फुल हो चुकी है कृपया किसी अन्य दिन की OPD बुक करें\n\nAll right reserved by the hospital\n\n0️⃣ Back | 00 Main Menu`,
-
-
+  maxPatientsReached: (doctorName = "", dateStr = "") =>
+    `⚠️ *OPD Limit Reached / ओपीडी सीमा समाप्त*${doctorName ? `\n👨‍⚕️ Doctor: ${doctorName}` : ""}${dateStr ? `\n📅 Date: ${dateStr}` : ""}\n\nDaily OPD limit has crossed, Kindly book for another day\nइस डेट की OPD फुल हो चुकी है कृपया किसी अन्य दिन की OPD बुक करें\n\nAll right reserved by the hospital\n\n0️⃣ Back | 00 Main Menu`,
 };
