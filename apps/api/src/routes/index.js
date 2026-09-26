@@ -203,7 +203,7 @@ router.put('/lab-tests/:id', requireRole(...STAFF, DOCTOR), async (req, res, nex
     const [updated] = await sql`
       UPDATE lab_tests 
       SET 
-        category = COALESCE(${category}, category)
+        category = COALESCE(${category === undefined ? null : category}, category)
       WHERE id = ${id}
       RETURNING *
     `
@@ -283,7 +283,7 @@ router.put('/additional-advice/:id', requireRole(...STAFF, DOCTOR), async (req, 
     const [updated] = await sql`
       UPDATE additional_advice 
       SET 
-        advice = COALESCE(${advice}, advice)
+        advice = COALESCE(${advice === undefined ? null : advice}, advice)
       WHERE id = ${id}
       RETURNING *
     `

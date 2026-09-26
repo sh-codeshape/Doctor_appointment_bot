@@ -383,59 +383,12 @@ export default function PrescriptionPage() {
         <div className={styles.tokenBadge}>TOKEN: {booking.token_number || 'T-001'}</div>
       </div>
 
-      {/* 1. Patient Vitals & Notes */}
+      {/* 1. Doctor Notes & Clinical Diagnosis */}
       <div className={styles.sectionCard}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionTitle}>
-            <Activity size={16} color="var(--accent-blue)" /> Patient Vitals
+            <Activity size={16} color="var(--accent-blue)" /> Clinical Diagnosis & Notes
           </span>
-        </div>
-        <div className={styles.vitalsGrid}>
-          <div className={styles.vitalField}>
-            <label className={styles.fieldLabel}>BP (mmHg)</label>
-            <input
-              className={styles.input}
-              placeholder="120/80"
-              value={vitals.bp}
-              onChange={(e) => setVitals({ ...vitals, bp: e.target.value })}
-            />
-          </div>
-          <div className={styles.vitalField}>
-            <label className={styles.fieldLabel}>Pulse (bpm)</label>
-            <input
-              className={styles.input}
-              placeholder="72"
-              value={vitals.pulse}
-              onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })}
-            />
-          </div>
-          <div className={styles.vitalField}>
-            <label className={styles.fieldLabel}>Temp (°F)</label>
-            <input
-              className={styles.input}
-              placeholder="98.6"
-              value={vitals.temp}
-              onChange={(e) => setVitals({ ...vitals, temp: e.target.value })}
-            />
-          </div>
-          <div className={styles.vitalField}>
-            <label className={styles.fieldLabel}>Weight (kg)</label>
-            <input
-              className={styles.input}
-              placeholder="65"
-              value={vitals.weight}
-              onChange={(e) => setVitals({ ...vitals, weight: e.target.value })}
-            />
-          </div>
-          <div className={styles.vitalField}>
-            <label className={styles.fieldLabel}>SpO2 (%)</label>
-            <input
-              className={styles.input}
-              placeholder="99"
-              value={vitals.spo2}
-              onChange={(e) => setVitals({ ...vitals, spo2: e.target.value })}
-            />
-          </div>
         </div>
 
         <div>

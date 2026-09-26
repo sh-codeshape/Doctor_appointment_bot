@@ -414,23 +414,6 @@ export class DoctorPrescriptionPrintHandler {
     </div>
   </div>
 
-  <!-- Vitals -->
-  <div class="vitals-wrap">
-    <div class="vitals-title">VITALS SECTION (FOR CLINICAL USE)</div>
-    <div class="vitals-grid">
-      <div class="vital-header">BP (mmHg)</div>
-      <div class="vital-header">Pulse (bpm)</div>
-      <div class="vital-header">Temp (°F)</div>
-      <div class="vital-header">Weight (kg)</div>
-      <div class="vital-header">SpO2 (%)</div>
-      <div class="vital-cell">${rxVitals.bp || ''}</div>
-      <div class="vital-cell">${rxVitals.pulse || ''}</div>
-      <div class="vital-cell">${rxVitals.temp || ''}</div>
-      <div class="vital-cell">${rxVitals.weight || ''}</div>
-      <div class="vital-cell">${rxVitals.spo2 || ''}</div>
-    </div>
-  </div>
-
   <!-- Doctor Notes -->
   <div class="rx-box">
     <div class="rx-title">DOCTOR'S NOTES / CLINICAL DIAGNOSIS</div>
@@ -458,19 +441,11 @@ export class DoctorPrescriptionPrintHandler {
     ${renderTestTable(malTests, false)}
   </div>
 
-  <!-- Additional Advice + Next Follow-up Section -->
-  <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 6px; margin-bottom: 8px;">
+  <!-- Additional Advice Section -->
+  <div style="margin-bottom: 8px;">
     <div style="border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px 8px;">
       <div style="font-size:10px; font-weight:800; color:#0369a1; text-transform:uppercase; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:2px;">ADDITIONAL ADVICE / LIFESTYLE RECOMMENDATIONS</div>
       ${adviceHTML}
-    </div>
-    <div style="border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px 8px; background:#f8fafc;">
-      <div style="font-size:10px; font-weight:800; color:#0369a1; text-transform:uppercase; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:2px;">NEXT FOLLOW-UP</div>
-      <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
-        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Date:</span> <span>________________</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Time:</span> <span>________________</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span style="font-weight:700; color:#475569;">Mode:</span> <span>Clinic / Video</span></div>
-      </div>
     </div>
   </div>
 
