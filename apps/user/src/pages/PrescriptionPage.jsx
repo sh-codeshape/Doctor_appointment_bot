@@ -320,8 +320,11 @@ export default function PrescriptionPage() {
               default_dosage: med.dosage,
               default_frequency: med.frequency,
               default_duration: med.duration,
+              remarks: med.remarks,
             }
-            return isNew(med.id) ? prescriptionService.addMedicine(data) : prescriptionService.updateMedicine(med.id, data)
+            return isNew(med.id)
+              ? prescriptionService.addMedicine(data)
+              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage })
           }),
           ...selectedTests.map((test) => {
             const data = { department_id: targetDeptId, name: test.name }
