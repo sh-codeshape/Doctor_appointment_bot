@@ -55,6 +55,8 @@ export default function PrescriptionPage() {
 
   const [adviceSearch, setAdviceSearch] = useState('')
   const [availableAdvice, setAvailableAdvice] = useState([])
+  const [availableRemarks, setAvailableRemarks] = useState([])
+  const [availableDosages, setAvailableDosages] = useState([])
 
   const [customMedName, setCustomMedName] = useState('')
   const [customTestName, setCustomTestName] = useState('')
@@ -74,11 +76,13 @@ export default function PrescriptionPage() {
         const deptId = data.department_id ? String(data.department_id) : 'all'
         const catalogParams = { department_id: deptId === 'all' ? null : deptId, search: '' }
 
-        const [enriched, medsRes, testsRes, adviceRes] = await Promise.all([
+        const [enriched, medsRes, testsRes, adviceRes, remarksRes, dosagesRes] = await Promise.all([
           printService.getSlipData(data).catch(() => data),
           prescriptionService.getMedicines(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getLabTests(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getAdditionalAdvice(catalogParams).catch(() => ({ data: [] })),
+          prescriptionService.getMedicineRemarks().catch(() => ({ data: [] })),
+          prescriptionService.getMedicineDosages().catch(() => ({ data: [] })),
         ])
 
         if (!active) return
@@ -88,6 +92,8 @@ export default function PrescriptionPage() {
         setAvailableMeds(medsRes.data || [])
         setAvailableTests(testsRes.data || [])
         setAvailableAdvice(adviceRes.data || [])
+        setAvailableRemarks(remarksRes.data || [])
+        setAvailableDosages(dosagesRes.data || [])
 
         const rx = enriched.prescription || enriched.meta?.prescription || {}
         setVitals(
@@ -99,7 +105,7 @@ export default function PrescriptionPage() {
             spo2: '',
           }
         )
-        setDoctorNotes(rx.doctor_notes || data.problemDescription || data.problem_description || '')
+        setDoctorNotes(rx.doctor_notes || '')
         setSelectedMeds(rx.medicines || [])
         setSelectedTests(rx.tests || [])
         setSelectedAdvice(rx.additional_advice || rx.advice || [])
@@ -166,7 +172,7 @@ export default function PrescriptionPage() {
       dosage: medObj.default_dosage || '1-0-1',
       frequency: medObj.default_frequency || 'Twice daily',
       duration: medObj.default_duration || '5 days',
-      remarks: 'After food',
+      remarks: medObj.remarks || '',
       target: addTarget,
     }
     setSelectedMeds([...selectedMeds, newItem])
@@ -503,7 +509,18 @@ export default function PrescriptionPage() {
 
         {/* Selected Medicines Table */}
         {selectedMeds.length > 0 && (
-          <table className={styles.rxTable}>
+          <>
+            <datalist id="remarks-list">
+              {availableRemarks.map(r => (
+                <option key={r.id} value={r.remark} />
+              ))}
+            </datalist>
+            <datalist id="dosages-list">
+              {availableDosages.map(d => (
+                <option key={d.id} value={d.dosage} />
+              ))}
+            </datalist>
+            <table className={styles.rxTable}>
             <thead>
               <tr>
                 <th style={{ width: 30 }}>#</th>
@@ -548,6 +565,7 @@ export default function PrescriptionPage() {
                       style={{ padding: '4px 8px', fontSize: 12 }}
                       value={item.dosage}
                       onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
+                      list="dosages-list"
                     />
                   </td>
                   <td>
@@ -572,6 +590,7 @@ export default function PrescriptionPage() {
                       style={{ padding: '4px 8px', fontSize: 12 }}
                       value={item.remarks}
                       onChange={(e) => handleUpdateMed(index, 'remarks', e.target.value)}
+                      list="remarks-list"
                     />
                   </td>
                   <td>
@@ -583,6 +602,7 @@ export default function PrescriptionPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
 

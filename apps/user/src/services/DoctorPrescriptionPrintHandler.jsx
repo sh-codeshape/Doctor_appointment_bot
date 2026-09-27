@@ -135,6 +135,7 @@ export class DoctorPrescriptionPrintHandler {
     const malTests = orderedTests.filter(t => t.target === 'Male Partner')
 
     const renderMedTable = (meds, isFemale) => {
+      if (meds.length === 0) return ''
       const bg = isFemale ? '#fce7f3' : '#dbeafe'
       const border = isFemale ? '#f9a8d4' : '#93c5fd'
       const title = isFemale ? '♀ FEMALE PARTNER MEDICATIONS' : '♂ MALE PARTNER MEDICATIONS'
@@ -157,9 +158,6 @@ export class DoctorPrescriptionPrintHandler {
         </tr>
       </thead>
       <tbody>`
-      if (meds.length === 0) {
-        html += `<tr><td colspan="7" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No medications</td></tr>`
-      } else {
         meds.forEach((pm, idx) => {
           html += `<tr>
             <td style="text-align:center; font-weight:600;">${idx + 1}</td>
@@ -171,7 +169,6 @@ export class DoctorPrescriptionPrintHandler {
             <td style="text-align:center;"><div class="chk"></div></td>
           </tr>`
         })
-      }
       html += `</tbody></table></div>`
       return html
     }
@@ -210,6 +207,7 @@ export class DoctorPrescriptionPrintHandler {
     }
 
     const renderTestTable = (tests, isFemale) => {
+      if (tests.length === 0) return ''
       const bg = isFemale ? '#fce7f3' : '#dbeafe'
       const border = isFemale ? '#f9a8d4' : '#93c5fd'
       const title = isFemale ? '♀ FEMALE TESTS' : '♂ MALE TESTS'
@@ -229,9 +227,6 @@ export class DoctorPrescriptionPrintHandler {
         </tr>
       </thead>
       <tbody>`
-      if (tests.length === 0) {
-        html += `<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic; padding:8px 4px;">No tests</td></tr>`
-      } else {
         tests.forEach((pt, idx) => {
           html += `<tr>
             <td style="text-align:center; font-weight:600;">${idx + 1}</td>
@@ -240,7 +235,6 @@ export class DoctorPrescriptionPrintHandler {
             <td style="text-align:center;"><div class="chk"></div></td>
           </tr>`
         })
-      }
       html += `</tbody></table></div>`
       return html
     }
@@ -279,8 +273,6 @@ export class DoctorPrescriptionPrintHandler {
         adviceHTML += `<li style="margin-bottom:2px;">${adv.advice || adv}</li>`
       })
       adviceHTML += `</ul>`
-    } else {
-      adviceHTML = `<div style="color:#64748b; font-style:italic; font-size:10px; margin-top:4px;">No additional advice</div>`
     }
 
     return `<!DOCTYPE html>
@@ -307,6 +299,9 @@ export class DoctorPrescriptionPrintHandler {
     max-width: 800px;
     page-break-inside: avoid;
     break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+    min-height: 97vh;
   }
   /* Header */
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
@@ -343,9 +338,9 @@ export class DoctorPrescriptionPrintHandler {
   .vital-cell { height: 18px; font-size: 10px; font-weight: 700; color: #0f172a; display:flex; align-items:center; justify-content:center; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
   .vital-cell:last-child { border-right: none; }
   /* Doctor Notes */
-  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 140px; }
+  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 140px; flex: 1; display: flex; flex-direction: column; }
   .rx-title { font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; }
-  .notes-text { font-size: 11px; color: #1e293b; font-weight: 600; line-height: 1.5; white-space: pre-wrap; }
+  .notes-text { font-size: 11px; color: #1e293b; font-weight: 600; line-height: 1.5; white-space: pre-wrap; flex: 1; }
   .ruled-line { border-bottom: 1px solid #e2e8f0; margin-top: 22px; height: 1px; }
   /* Tables */
   .tbl-wrap { border: 1px solid #0284c7; border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
@@ -410,7 +405,6 @@ export class DoctorPrescriptionPrintHandler {
       <div class="field-row"><span class="field-name">Visit Type:</span><span class="field-val">${isIPD ? 'Hospitalization (IPD Admission)' : 'OPD Appointment'}</span></div>
       <div class="field-row"><span class="field-name">${isIPD ? 'Admission Date:' : 'Appt Date:'}</span><span class="field-val">${appointmentDate}</span></div>
       <div class="field-row"><span class="field-name">Dept / Doctor:</span><span class="field-val">${booking.doctor_name || 'General Doctor'}${booking.doctor_specialization ? ' — ' + booking.doctor_specialization : ''}</span></div>
-      <div class="field-row"><span class="field-name">Chief Complaint:</span><span class="field-val">${booking.problemDescription || booking.problem_description || 'Routine Consultation / Checkup'}</span></div>
     </div>
   </div>
 
@@ -420,27 +414,36 @@ export class DoctorPrescriptionPrintHandler {
     ${rxNotes ? `<div class="notes-text">${rxNotes}</div>` : `<div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div><div class="ruled-line"></div>`}
   </div>
 
+  ${prescribedMeds.length > 0 ? `
   <!-- Prescribed Medicines Section -->
   <div class="section-full-header">
     <span>PRESCRIBED MEDICINES</span>
     <span style="font-weight:600; font-size:8.5px; color:#475569;">(Only selected medicines)</span>
   </div>
   ${renderGenMedTable(genMeds)}
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+  ${(femMeds.length > 0 || malMeds.length > 0) ? `
+  <div style="display: grid; grid-template-columns: ${femMeds.length > 0 && malMeds.length > 0 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
     ${renderMedTable(femMeds, true)}
     ${renderMedTable(malMeds, false)}
   </div>
+  ` : ''}
+  ` : ''}
 
+  ${orderedTests.length > 0 ? `
   <!-- Ordered Lab Tests Section -->
   <div class="section-full-header">
     <span>ORDERED LAB TESTS</span>
   </div>
   ${renderGenTestTable(genTests)}
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+  ${(femTests.length > 0 || malTests.length > 0) ? `
+  <div style="display: grid; grid-template-columns: ${femTests.length > 0 && malTests.length > 0 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
     ${renderTestTable(femTests, true)}
     ${renderTestTable(malTests, false)}
   </div>
+  ` : ''}
+  ` : ''}
 
+  ${adviceHTML ? `
   <!-- Additional Advice Section -->
   <div style="margin-bottom: 8px;">
     <div style="border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px 8px;">
@@ -448,6 +451,7 @@ export class DoctorPrescriptionPrintHandler {
       ${adviceHTML}
     </div>
   </div>
+  ` : ''}
 
   <!-- Signature -->
   <div class="sig-area">

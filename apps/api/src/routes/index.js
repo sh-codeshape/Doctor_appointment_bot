@@ -102,14 +102,42 @@ router.get('/medicines', requireRole(...STAFF, DOCTOR), async (req, res, next) =
     if (search) {
       const q = `%${search}%`
       if (department_id) {
-        rows = await sql`SELECT * FROM medicines WHERE is_active = true AND department_id = ${department_id} AND name ILIKE ${q} ORDER BY name ASC`
+        rows = await sql`
+          SELECT m.*, r.remark as remarks, d.dosage as default_dosage 
+          FROM medicines m 
+          LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
+          LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
+          WHERE m.is_active = true AND m.department_id = ${department_id} AND m.name ILIKE ${q} 
+          ORDER BY m.name ASC
+        `
       } else {
-        rows = await sql`SELECT * FROM medicines WHERE is_active = true AND name ILIKE ${q} ORDER BY name ASC`
+        rows = await sql`
+          SELECT m.*, r.remark as remarks, d.dosage as default_dosage 
+          FROM medicines m 
+          LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
+          LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
+          WHERE m.is_active = true AND m.name ILIKE ${q} 
+          ORDER BY m.name ASC
+        `
       }
     } else if (department_id) {
-      rows = await sql`SELECT * FROM medicines WHERE is_active = true AND department_id = ${department_id} ORDER BY name ASC`
+      rows = await sql`
+        SELECT m.*, r.remark as remarks, d.dosage as default_dosage 
+        FROM medicines m 
+        LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
+        LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
+        WHERE m.is_active = true AND m.department_id = ${department_id} 
+        ORDER BY m.name ASC
+      `
     } else {
-      rows = await sql`SELECT * FROM medicines WHERE is_active = true ORDER BY name ASC`
+      rows = await sql`
+        SELECT m.*, r.remark as remarks, d.dosage as default_dosage 
+        FROM medicines m 
+        LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
+        LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
+        WHERE m.is_active = true 
+        ORDER BY m.name ASC
+      `
     }
     res.json({ data: rows })
   } catch (err) { next(err) }
@@ -117,35 +145,147 @@ router.get('/medicines', requireRole(...STAFF, DOCTOR), async (req, res, next) =
 
 const saveMedicineHandler = async (req, res, next) => {
   try {
-    const { name, department_id, dosage_form, default_dosage, default_frequency, default_duration } = req.body
+    const { name, department_id, dosage_form, default_dosage, default_frequency, default_duration, remarks } = req.body
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Medicine name is required' })
     }
     const nameTrimmed = name.trim()
     const dId = department_id ? Number(department_id) : null
 
+    // Handle medicine_remarks logic
+    let rId = null
+    if (remarks && remarks.trim()) {
+      const rmTrimmed = remarks.trim()
+      const [exRm] = await sql`SELECT id FROM medicine_remarks WHERE LOWER(remark) = LOWER(${rmTrimmed}) LIMIT 1`
+      if (exRm) {
+        rId = exRm.id
+      } else {
+        const [newRm] = await sql`INSERT INTO medicine_remarks (remark, is_active) VALUES (${rmTrimmed}, true) RETURNING id`
+        rId = newRm.id
+      }
+    }
+
+    // Handle medicine_dosages logic
+    let dsgId = null
+    if (default_dosage && default_dosage.trim()) {
+      const dsgTrimmed = default_dosage.trim()
+      const [exDsg] = await sql`SELECT id FROM medicine_dosages WHERE LOWER(dosage) = LOWER(${dsgTrimmed}) LIMIT 1`
+      if (exDsg) {
+        dsgId = exDsg.id
+      } else {
+        const [newDsg] = await sql`INSERT INTO medicine_dosages (dosage, is_active) VALUES (${dsgTrimmed}, true) RETURNING id`
+        dsgId = newDsg.id
+      }
+    }
+
     const [existing] = await sql`
-      SELECT * FROM medicines 
-      WHERE LOWER(name) = LOWER(${nameTrimmed})
-        AND (department_id IS NULL OR department_id = ${dId})
+      SELECT m.*, r.remark as remarks, d.dosage as default_dosage FROM medicines m
+      LEFT JOIN medicine_remarks r ON m.remark_id = r.id
+      LEFT JOIN medicine_dosages d ON m.dosage_id = d.id
+      WHERE LOWER(m.name) = LOWER(${nameTrimmed})
+        AND (m.department_id IS NULL OR m.department_id = ${dId})
       LIMIT 1
     `
     if (existing) {
+      const updates = {}
+      if (rId && existing.remark_id !== rId) updates.remark_id = rId
+      if (dsgId && existing.dosage_id !== dsgId) updates.dosage_id = dsgId
+
+      if (Object.keys(updates).length > 0) {
+        const [updated] = await sql`
+          UPDATE medicines SET ${sql(updates)} WHERE id = ${existing.id} RETURNING *
+        `
+        return res.json({ 
+          success: true, 
+          data: { ...updated, remarks: remarks ? remarks.trim() : null, default_dosage: default_dosage ? default_dosage.trim() : null }, 
+          created: false 
+        })
+      }
       return res.json({ success: true, data: existing, created: false })
     }
 
     const [created] = await sql`
-      INSERT INTO medicines (department_id, name, dosage_form, default_dosage, default_frequency, default_duration, is_active)
-      VALUES (${dId}, ${nameTrimmed}, ${dosage_form || 'Tab'}, ${default_dosage || ''}, ${default_frequency || ''}, ${default_duration || ''}, true)
+      INSERT INTO medicines (department_id, name, dosage_form, default_frequency, default_duration, is_active, remark_id, dosage_id)
+      VALUES (${dId}, ${nameTrimmed}, ${dosage_form || 'Tab'}, ${default_frequency || ''}, ${default_duration || ''}, true, ${rId}, ${dsgId})
       RETURNING *
     `
-    res.status(201).json({ success: true, data: created, created: true })
+    const dataEnriched = { 
+      ...created, 
+      remarks: remarks ? remarks.trim() : null,
+      default_dosage: default_dosage ? default_dosage.trim() : null
+    }
+    res.status(201).json({ success: true, data: dataEnriched, created: true })
   } catch (err) { next(err) }
 }
 
 router.post('/medicines', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/save-medicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.post('/savemedicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
+
+// PUT to update existing medicine's remark and dosage
+router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { remarks, default_dosage } = req.body
+    
+    let rId = null
+    if (remarks && remarks.trim()) {
+      const rmTrimmed = remarks.trim()
+      const [exRm] = await sql`SELECT id FROM medicine_remarks WHERE LOWER(remark) = LOWER(${rmTrimmed}) LIMIT 1`
+      if (exRm) {
+        rId = exRm.id
+      } else {
+        const [newRm] = await sql`INSERT INTO medicine_remarks (remark, is_active) VALUES (${rmTrimmed}, true) RETURNING id`
+        rId = newRm.id
+      }
+    }
+
+    let dsgId = null
+    if (default_dosage && default_dosage.trim()) {
+      const dsgTrimmed = default_dosage.trim()
+      const [exDsg] = await sql`SELECT id FROM medicine_dosages WHERE LOWER(dosage) = LOWER(${dsgTrimmed}) LIMIT 1`
+      if (exDsg) {
+        dsgId = exDsg.id
+      } else {
+        const [newDsg] = await sql`INSERT INTO medicine_dosages (dosage, is_active) VALUES (${dsgTrimmed}, true) RETURNING id`
+        dsgId = newDsg.id
+      }
+    }
+    
+    const updates = {}
+    if (rId !== null) updates.remark_id = rId
+    if (dsgId !== null) updates.dosage_id = dsgId
+
+    if (Object.keys(updates).length > 0) {
+      const [updated] = await sql`
+        UPDATE medicines SET ${sql(updates)} WHERE id = ${id} RETURNING *
+      `
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Medicine not found' })
+      }
+      return res.json({ success: true, data: { ...updated, remarks: remarks ? remarks.trim() : null, default_dosage: default_dosage ? default_dosage.trim() : null } })
+    }
+    
+    const [existing] = await sql`SELECT * FROM medicines WHERE id = ${id} LIMIT 1`
+    res.json({ success: true, data: existing })
+  } catch (err) { next(err) }
+})
+
+// Medicine Remarks API
+router.get('/medicine-remarks', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const rows = await sql`SELECT * FROM medicine_remarks WHERE is_active = true ORDER BY remark ASC`
+    res.json({ data: rows })
+  } catch (err) { next(err) }
+})
+
+// Medicine Dosages API
+router.get('/medicine-dosages', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const rows = await sql`SELECT * FROM medicine_dosages WHERE is_active = true ORDER BY dosage ASC`
+    res.json({ data: rows })
+  } catch (err) { next(err) }
+})
 
 // Lab tests master list
 router.get('/lab-tests', requireRole(...STAFF, DOCTOR), async (req, res, next) => {

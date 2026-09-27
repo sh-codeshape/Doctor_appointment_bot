@@ -167,4 +167,14 @@ export const prescriptionService = {
     const res = await api.delete(`/additional-advice/${id}`)
     return res.data
   },
+  async getMedicineRemarks() {
+    if (isMockMode()) return { data: [] }
+    const res = await api.get('/medicine-remarks')
+    return res.data
+  },
+  async getMedicineDosages() {
+    if (isMockMode()) return { data: [] }
+    const res = await api.get('/medicine-dosages')
+    return res.data
+  },
 }
