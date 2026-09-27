@@ -338,9 +338,9 @@ export class DoctorPrescriptionPrintHandler {
   .vital-cell { height: 18px; font-size: 10px; font-weight: 700; color: #0f172a; display:flex; align-items:center; justify-content:center; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
   .vital-cell:last-child { border-right: none; }
   /* Doctor Notes */
-  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 140px; flex: 1; display: flex; flex-direction: column; }
+  .rx-box { border: 1px solid #cbd5e1; border-radius: 5px; padding: 8px 12px; margin-bottom: 8px; min-height: 140px; }
   .rx-title { font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; }
-  .notes-text { font-size: 11px; color: #1e293b; font-weight: 600; line-height: 1.5; white-space: pre-wrap; flex: 1; }
+  .notes-text { font-size: 11px; color: #1e293b; font-weight: 600; line-height: 1.5; white-space: pre-wrap; }
   .ruled-line { border-bottom: 1px solid #e2e8f0; margin-top: 22px; height: 1px; }
   /* Tables */
   .tbl-wrap { border: 1px solid #0284c7; border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
