@@ -6,31 +6,81 @@ import { STEPS, MESSAGES } from '../conversation.steps.js'
 
 export const backHandler = {
   async handleBack(service, phone, state) {
-    // ── OPD Flow ──────────────────────────────────────────
-    if (state.currentStep === STEPS.OPD_DEPARTMENT) {
+    // ── OPD Flow (New order: WHO_FOR → Patient Info → Department → Doctor → Date → Address → Problem → Review) ──
+
+    // WHO_FOR → back to main menu
+    if (state.currentStep === STEPS.WHO_FOR) {
       return service.resetAndWelcome(phone)
     }
+
+    // PATIENT_NAME → back to WHO_FOR (or main menu if no patients)
+    if (state.currentStep === STEPS.PATIENT_NAME) {
+      const patients = await patientService.findAllByPhone(phone)
+      if (patients.length > 0) {
+        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.whoFor(patients))
+      }
+      return service.resetAndWelcome(phone)
+    }
+
+    // PATIENT_MOBILE → back to PATIENT_NAME
+    if (state.currentStep === STEPS.PATIENT_MOBILE) {
+      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_NAME })
+      return service.sendMessage(phone, MESSAGES.patientName())
+    }
+
+    // PATIENT_AGE → back to PATIENT_MOBILE
+    if (state.currentStep === STEPS.PATIENT_AGE) {
+      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_MOBILE })
+      return service.sendMessage(phone, MESSAGES.patientMobile())
+    }
+
+    // PATIENT_GENDER → back to PATIENT_AGE
+    if (state.currentStep === STEPS.PATIENT_GENDER) {
+      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_AGE })
+      return service.sendMessage(phone, MESSAGES.patientAge())
+    }
+
+    // OPD_PATIENT_TYPE_EARLY → back to PATIENT_GENDER
     if (state.currentStep === STEPS.OPD_PATIENT_TYPE_EARLY) {
+      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_GENDER })
+      return service.sendMessage(phone, MESSAGES.patientGender())
+    }
+
+    // OPD_DEPARTMENT → back depends on patient path
+    if (state.currentStep === STEPS.OPD_DEPARTMENT) {
+      if (state.stateData?.isExistingPatient) {
+        // Existing patient → back to WHO_FOR
+        const patients = await patientService.findAllByPhone(phone)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
+        return service.sendMessage(phone, MESSAGES.whoFor(patients))
+      }
+      // New patient → back to OPD_PATIENT_TYPE_EARLY
+      await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_PATIENT_TYPE_EARLY })
+      return service.sendMessage(phone, MESSAGES.patientType(state.tempName))
+    }
+
+    // OPD_GYNAE_CATEGORY → back to OPD_DEPARTMENT
+    if (state.currentStep === STEPS.OPD_GYNAE_CATEGORY) {
       const deps = await departmentService.getOpdWhatsAppDepartments()
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_DEPARTMENT })
       return service.sendMessage(phone, MESSAGES.departments(deps))
     }
-    if (state.currentStep === STEPS.OPD_GYNAE_CATEGORY) {
-      // Back from Gynae category → re-ask Old/New
-      const deptName = state.stateData?.departmentName || ''
-      await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_PATIENT_TYPE_EARLY })
-      return service.sendMessage(phone, MESSAGES.patientTypeEarly(deptName))
-    }
+
+    // OPD_INFERTILITY_VISIT → back to OPD_GYNAE_CATEGORY
     if (state.currentStep === STEPS.OPD_INFERTILITY_VISIT) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_GYNAE_CATEGORY })
       return service.sendMessage(phone, MESSAGES.gynaeCategory())
     }
+
+    // OPD_INFERTILITY_VISIT_OTHER → back to OPD_INFERTILITY_VISIT
     if (state.currentStep === STEPS.OPD_INFERTILITY_VISIT_OTHER) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_INFERTILITY_VISIT })
       return service.sendMessage(phone, MESSAGES.infertilityVisitPrompt())
     }
+
+    // OPD_DOCTOR → back depends on context
     if (state.currentStep === STEPS.OPD_DOCTOR) {
-      // Determine where to go back based on context
       if (state.stateData?.category === 'Infertility') {
         await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_GYNAE_CATEGORY })
         return service.sendMessage(phone, MESSAGES.gynaeCategory())
@@ -39,21 +89,17 @@ export const backHandler = {
         await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_GYNAE_CATEGORY })
         return service.sendMessage(phone, MESSAGES.gynaeCategory())
       }
-      if (state.stateData?.category === 'NewPatient') {
-        // New patient Gynae → back to Old/New question
-        const deptName = state.stateData?.departmentName || ''
-        await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_PATIENT_TYPE_EARLY })
-        return service.sendMessage(phone, MESSAGES.patientTypeEarly(deptName))
-      }
-      // Non-Gynae → back to Old/New patient type
-      const deptName = state.stateData?.departmentName || ''
-      await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_PATIENT_TYPE_EARLY })
-      return service.sendMessage(phone, MESSAGES.patientTypeEarly(deptName))
+      // Non-Gynae or NewPatient → back to department
+      const deps = await departmentService.getOpdWhatsAppDepartments()
+      await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_DEPARTMENT })
+      return service.sendMessage(phone, MESSAGES.departments(deps))
     }
+
+    // SELECT_DATE → back to OPD_DOCTOR
     if (state.currentStep === STEPS.SELECT_DATE) {
       const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
       let docs = await doctorService.getDoctorsByDepartment(selectedDoc.departmentId)
-      
+
       const category = state.stateData?.category
       const visitNumber = state.stateData?.visitNumber
 
@@ -81,66 +127,43 @@ export const backHandler = {
       await conversationRepo.upsert(phone, { currentStep: STEPS.OPD_DOCTOR })
       return service.sendMessage(phone, MESSAGES.doctors('Doctors', docs))
     }
-    if (state.currentStep === STEPS.WHO_FOR) {
-      const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
-      await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
-      return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))
-    }
-    if (state.currentStep === STEPS.PATIENT_NAME) {
-      const patients = await patientService.findAllByPhone(phone)
-      if (patients.length > 0) {
-        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
-        return service.sendMessage(phone, MESSAGES.whoFor(patients))
-      }
-      const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
-      await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
-      return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))
-    }
-    if (state.currentStep === STEPS.PATIENT_MOBILE) {
-      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_NAME })
-      return service.sendMessage(phone, MESSAGES.patientName())
-    }
-    if (state.currentStep === STEPS.PATIENT_AGE) {
-      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_MOBILE })
-      return service.sendMessage(phone, MESSAGES.patientMobile())
-    }
-    if (state.currentStep === STEPS.PATIENT_GENDER) {
-      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_AGE })
-      return service.sendMessage(phone, MESSAGES.patientAge())
-    }
-    if (state.currentStep === STEPS.PATIENT_TYPE) {
-      // Fallback: if somehow reached, go back to gender
-      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_GENDER })
-      return service.sendMessage(phone, MESSAGES.patientGender())
-    }
+
+    // PATIENT_DISTRICT → back to SELECT_DATE
     if (state.currentStep === STEPS.PATIENT_DISTRICT) {
-      const isExisting = state.stateData?.isExistingPatient === true
-      if (isExisting) {
-        const patients = await patientService.findAllByPhone(phone)
-        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
-        return service.sendMessage(phone, MESSAGES.whoFor(patients))
-      }
-      await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_GENDER })
-      return service.sendMessage(phone, MESSAGES.patientGender())
+      const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
+      await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
+      return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))
     }
+
+    // PATIENT_ADDRESS → back to PATIENT_DISTRICT
     if (state.currentStep === STEPS.PATIENT_ADDRESS) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_DISTRICT })
       return service.sendMessage(phone, MESSAGES.patientDistrict())
     }
+
+    // PATIENT_PINCODE → back to PATIENT_ADDRESS
     if (state.currentStep === STEPS.PATIENT_PINCODE) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_ADDRESS })
       return service.sendMessage(phone, MESSAGES.patientAddress())
     }
+
+    // PATIENT_PROBLEM → back to PATIENT_PINCODE (or SELECT_DATE for existing patients with address)
     if (state.currentStep === STEPS.PATIENT_PROBLEM) {
       const isExisting = state.stateData?.isExistingPatient === true
-      if (isExisting) {
-        const patients = await patientService.findAllByPhone(phone)
-        await conversationRepo.upsert(phone, { currentStep: STEPS.WHO_FOR })
-        return service.sendMessage(phone, MESSAGES.whoFor(patients))
+      const hasAddress = state.stateData?.hasAddress === true || Boolean(
+        state.stateData?.district && state.stateData?.district !== 'N/A' &&
+        state.stateData?.address && state.stateData?.address !== 'N/A'
+      )
+      if (isExisting && hasAddress) {
+        const selectedDoc = await doctorService.getDoctorById(state.selectedDoctorId)
+        await conversationRepo.upsert(phone, { currentStep: STEPS.SELECT_DATE })
+        return service.sendDateOptions(phone, state, (opts) => MESSAGES.selectDate(selectedDoc?.name || 'Doctor', opts))
       }
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_PINCODE })
       return service.sendMessage(phone, MESSAGES.patientPinCode())
     }
+
+    // REVIEW → back to PATIENT_PROBLEM
     if (state.currentStep === STEPS.REVIEW) {
       await conversationRepo.upsert(phone, { currentStep: STEPS.PATIENT_PROBLEM })
       return service.sendMessage(phone, MESSAGES.patientProblem())

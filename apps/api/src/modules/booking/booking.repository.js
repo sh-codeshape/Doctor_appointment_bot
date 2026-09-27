@@ -624,6 +624,31 @@ class BookingRepository {
       return 0
     }
   }
+  async countBookingsByPatientTypeForDoctorOnDate(doctorId, targetDate) {
+    const coercedDoctorId = toObjectIdString(doctorId)
+    if (!coercedDoctorId || !targetDate) return { newCount: 0, oldCount: 0 }
+    const d = new Date(targetDate)
+    if (isNaN(d.getTime())) return { newCount: 0, oldCount: 0 }
+    const dateStr = d.toISOString().slice(0, 10)
+    try {
+      const [row] = await sql`
+        SELECT
+          COUNT(*) FILTER (WHERE p.is_old = false)::int AS new_count,
+          COUNT(*) FILTER (WHERE p.is_old = true)::int AS old_count
+        FROM bookings b
+        LEFT JOIN patients p ON b.patient_id = p.id
+        WHERE b.doctor_id = ${coercedDoctorId}
+          AND b.status != 'cancelled'
+          AND b.appointment_date::date = ${dateStr}::date
+      `
+      return {
+        newCount: Number(row?.new_count || 0),
+        oldCount: Number(row?.old_count || 0)
+      }
+    } catch (e) {
+      return { newCount: 0, oldCount: 0 }
+    }
+  }
 }
 
 export default new BookingRepository()

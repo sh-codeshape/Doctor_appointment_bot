@@ -125,13 +125,16 @@ class PatientService {
           if (doctor.isActive === false) {
             throw new AppError(`Dr. ${doctor.name} is currently offline or inactive.`, 400)
           }
-          const maxCap = doctor.maxPatientsPerDay !== undefined && doctor.maxPatientsPerDay !== null
-            ? Number(doctor.maxPatientsPerDay)
-            : 30
-          const currentCount = await bookingRepo.countBookingsForDoctorOnDate(doctorId, preferredDate)
-          if (currentCount >= maxCap) {
-            const formattedDateStr = preferredDate.toLocaleDateString('en-IN')
-            throw new AppError(`Dr. ${doctor.name} has reached the maximum daily limit of ${maxCap} patients for ${formattedDateStr}. Please select another date or doctor.`, 400)
+          // Separate capacity check for new vs old patients
+          const { newCount, oldCount } = await bookingRepo.countBookingsByPatientTypeForDoctorOnDate(doctorId, preferredDate)
+          const maxNew = doctor.maxNewPatients !== undefined && doctor.maxNewPatients !== null ? Number(doctor.maxNewPatients) : 40
+          const maxOld = doctor.maxOldPatients !== undefined && doctor.maxOldPatients !== null ? Number(doctor.maxOldPatients) : 30
+          const formattedDateStr = preferredDate.toLocaleDateString('en-IN')
+          if (isOld && oldCount >= maxOld) {
+            throw new AppError(`Dr. ${doctor.name} has reached the maximum daily limit of ${maxOld} old patients for ${formattedDateStr}. Please select another date or doctor.`, 400)
+          }
+          if (!isOld && newCount >= maxNew) {
+            throw new AppError(`Dr. ${doctor.name} has reached the maximum daily limit of ${maxNew} new patients for ${formattedDateStr}. Please select another date or doctor.`, 400)
           }
           if (!departmentId && doctor.departmentId) {
             const docDeptId = doctor.departmentId._id || doctor.departmentId.id || doctor.departmentId
@@ -163,6 +166,26 @@ class PatientService {
       category: data.category || '',
       visitNumber: data.visitNumber || null,
     })
+
+    // Update visit tracking in patient meta
+    try {
+      const currentMeta = patient.meta || {}
+      const deptVisits = currentMeta.departmentVisits || {}
+      const deptKey = String(departmentId || '')
+      if (deptKey) {
+        const existing = deptVisits[deptKey] || { count: 0 }
+        deptVisits[deptKey] = {
+          count: existing.count + 1,
+          lastVisit: preferredDate.toISOString().slice(0, 10)
+        }
+        await patientRepo.update(patient.id, {
+          meta: { ...currentMeta, departmentVisits: deptVisits }
+        })
+      }
+    } catch (metaErr) {
+      // Non-critical — don't fail the booking if meta update fails
+      logger.warn(`Failed to update visit tracking meta for patient ${patient.id}: ${metaErr.message}`)
+    }
 
     logger.info(`Registered ${type} booking ${booking.bookingId} for phone ${phone} (source: ${source})`)
     return { patient, booking }

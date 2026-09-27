@@ -8,7 +8,7 @@ vi.mock('../src/modules/doctor/doctor.service.js', () => ({
   default: { getActiveDoctors: vi.fn(), getDoctorById: vi.fn(), getDoctorsByDepartment: vi.fn() }
 }))
 vi.mock('../src/modules/department/department.service.js', () => ({
-  default: { getActiveDepartments: vi.fn() }
+  default: { getActiveDepartments: vi.fn(), getOpdWhatsAppDepartments: vi.fn() }
 }))
 vi.mock('../src/modules/booking/booking.service.js', () => ({
   default: { createBooking: vi.fn() }
@@ -25,6 +25,9 @@ vi.mock('../src/utils/cloudinary.js', () => ({
 vi.mock('../src/utils/logger.js', () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }
 }))
+vi.mock('../src/modules/booking/booking.repository.js', () => ({
+  default: { getLatestInfertilityVisitCount: vi.fn().mockResolvedValue(0) }
+}))
 
 // ── Imports ─────────────────────────────────────────────────────────
 import conversationService from '../src/modules/conversation/conversation.service.js'
@@ -34,6 +37,7 @@ import doctorService from '../src/modules/doctor/doctor.service.js'
 import departmentService from '../src/modules/department/department.service.js'
 import patientService from '../src/modules/patient/patient.service.js'
 import medicineOrderService from '../src/modules/medicine/medicineOrder.service.js'
+import bookingRepo from '../src/modules/booking/booking.repository.js'
 
 // ── Fixtures ────────────────────────────────────────────────────────
 const DEPT = { _id: 'dept1', name: 'General Consultation' }
@@ -64,6 +68,7 @@ function setupStateStore() {
 
 function setupDefaultMocks() {
   departmentService.getActiveDepartments.mockResolvedValue([DEPT])
+  departmentService.getOpdWhatsAppDepartments.mockResolvedValue([DEPT])
   doctorService.getActiveDoctors.mockResolvedValue([DOCTOR])
   doctorService.getDoctorsByDepartment.mockResolvedValue([DOCTOR])
   doctorService.getDoctorById.mockResolvedValue(DOCTOR)
@@ -87,18 +92,18 @@ async function send(text) {
 /** Drive a new patient to the REVIEW step, return the review text */
 async function driveToReview() {
   await send('hi')        // WELCOME
-  await send('1')         // OPD → departments
-  await send('1')         // dept → OPD_PATIENT_TYPE_EARLY
-  await send('2')         // New Patient → doctors
-  await send('1')         // doctor → dates
-  await send('1')         // date → patient name (new patient)
-  await send('John Doe')  // → mobile
-  await send('9876543210')// → age
-  await send('30')        // → age → gender
-  await send('1')         // Male → district
-  await send('Jaunpur')   // → address
-  await send('Civil Lines') // → PIN code
-  await send('222001')    // → problem
+  await send('1')         // OPD → PATIENT_NAME (since patients array is empty)
+  await send('John Doe')  // → PATIENT_MOBILE
+  await send('9876543210')// → PATIENT_AGE
+  await send('30')        // → PATIENT_GENDER
+  await send('1')         // Male → OPD_PATIENT_TYPE_EARLY
+  await send('2')         // New Patient → OPD_DEPARTMENT
+  await send('1')         // General Consultation → OPD_DOCTOR
+  await send('1')         // Dr. Smith → SELECT_DATE
+  await send('1')         // date → PATIENT_DISTRICT
+  await send('Jaunpur')   // → PATIENT_ADDRESS
+  await send('Civil Lines') // → PATIENT_PINCODE
+  await send('222001')    // → PATIENT_PROBLEM
   return send('Fever for 2 days')   // → REVIEW
 }
 
@@ -118,17 +123,21 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
 
-  it('goes WELCOME → departments → doctors → dates', async () => {
+  it('goes WELCOME → Patient Info (for brand new) → Dept → Doctor → Date', async () => {
     await send('hi')
     let reply = await send('1')
+    expect(reply).toContain('Patient Name')
+    expect(stateStore[PHONE].currentStep).toBe('PATIENT_NAME')
+
+    await send('Jane')
+    await send('9876543210')
+    await send('30')
+    await send('2')
+    reply = await send('2') // New patient -> dept
     expect(reply).toContain('General Consultation')
     expect(stateStore[PHONE].currentStep).toBe('OPD_DEPARTMENT')
-
+    
     reply = await send('1')
-    expect(reply).toContain('PATIENT TYPE')
-    expect(stateStore[PHONE].currentStep).toBe('OPD_PATIENT_TYPE_EARLY')
-
-    reply = await send('2')
     expect(reply).toContain('Dr. Smith')
     expect(stateStore[PHONE].currentStep).toBe('OPD_DOCTOR')
 
@@ -153,68 +162,73 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
 
-  it('routes a returning patient through WHO_FOR', async () => {
+  it('routes a returning patient through WHO_FOR and skips basic info', async () => {
     patientService.findAllByPhone.mockResolvedValue([PATIENT_RETURNING])
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1')
-    const reply = await send('1')
+    await send('hi')
+    let reply = await send('1') // OPD
     expect(reply).toContain('BOOKING FOR WHOM')
+    expect(reply).toContain('Raj Kumar')
     expect(stateStore[PHONE].currentStep).toBe('WHO_FOR')
 
-    const next = await send('2') // someone else → full form
-    expect(next).toContain('Patient Name')
-    expect(stateStore[PHONE].currentStep).toBe('PATIENT_NAME')
+    reply = await send('1') // Select existing patient (Raj Kumar)
+    expect(reply).toContain('General Consultation')
+    expect(stateStore[PHONE].currentStep).toBe('OPD_DEPARTMENT')
+    
+    await send('1') // dept
+    await send('1') // doctor
+    reply = await send('1') // date
+    
+    // existing patient has address, so should jump to problem
+    expect(reply).toContain('Health Problem')
+    expect(stateStore[PHONE].currentStep).toBe('PATIENT_PROBLEM')
   })
 
   it('steps back with 0', async () => {
-    await send('hi'); await send('1')
+    await send('hi'); await send('1') // WHO_FOR
     const reply = await send('0')
     expect(reply).toContain('Namaste')
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
 
   it('resets with menu/00 from mid-flow', async () => {
-    await send('hi'); await send('1'); await send('1')
+    await send('hi'); await send('1'); await send('1') // PATIENT_NAME
     const reply = await send('menu')
     expect(reply).toContain('Namaste')
     expect(stateStore[PHONE].currentStep).toBe('WELCOME')
   })
 
-  it('rejects invalid department/doctor/date inputs', async () => {
-    await send('hi'); await send('1')
+  it('rejects invalid inputs in WHO_FOR and PATIENT_NAME', async () => {
+    patientService.findAllByPhone.mockResolvedValue([PATIENT_RETURNING])
+    await send('hi'); await send('1') // WHO_FOR
     let reply = await send('99')
     expect(reply).toContain('Invalid input')
 
-    await send('1') // patient type early
-    await send('2') // new patient -> doctor
-    reply = await send('99')
+    await send('2') // Someone Else -> PATIENT_NAME
+    reply = await send('X') // Too short
     expect(reply).toContain('Invalid input')
-
-    await send('1')
-    reply = await send('not-a-date')
-    expect(reply).toContain('Select Appointment Date')
   })
 
   it('rejects bad mobile/age/gender in patient form', async () => {
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
-    await send('John Doe')
+    await send('hi'); await send('1'); await send('1') // PATIENT_NAME
+    await send('John Doe') // Mobile
     let reply = await send('123')
     expect(reply).toContain('Invalid Mobile Number')
-    await send('9876543210')
+    await send('9876543210') // Age
     reply = await send('999')
     expect(reply).toContain('Invalid input')
-    await send('30')
+    await send('30') // Gender
     reply = await send('9')
     expect(reply).toContain('Invalid input')
   })
 
-  it('completes the hospitalization flow via shared registration including patient type (isOld)', async () => {
+  it('completes the hospitalization flow via shared registration', async () => {
     patientService.registerPatientWithBooking.mockResolvedValue({
       patient: { _id: 'pat1', name: 'Ramesh', uhid: 'KGN-092026-00043' },
       booking: { _id: 'b2', bookingId: 'BK-20260907-002', tokenNumber: 'HOSP-001' },
     })
     await send('hi')
-    await send('2')
-    expect(stateStore[PHONE].currentStep).toBe('HOSP_NAME')
+    await send('2') // HOSP_WHO_FOR
+    await send('1') // New patient -> HOSP_NAME
     await send('Ramesh')
     await send('9876543210') // mobile
     await send('45')         // age
@@ -245,13 +259,10 @@ describe('Conversation Booking Flow (current)', () => {
     await send('hi')
     const reply = await send('2')
     expect(reply).toContain('HOSPITALIZATION')
+    expect(reply).toContain('Raj Kumar')
     expect(stateStore[PHONE].currentStep).toBe('HOSP_WHO_FOR')
 
-    const typeMsg = await send('1') // Select Raj Kumar
-    expect(typeMsg).toContain('PATIENT TYPE')
-    expect(stateStore[PHONE].currentStep).toBe('HOSP_TYPE')
-
-    await send('1') // Old Patient (isOld = true) -> problem (since Raj Kumar has district/address)
+    await send('1') // Select Raj Kumar -> problem (since Raj Kumar has district/address)
     expect(stateStore[PHONE].currentStep).toBe('HOSP_PROBLEM')
     await send('Severe pain')
     const review = await send('1') // date option 1 -> HOSP_REVIEW
@@ -259,7 +270,7 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('HOSP_REVIEW')
   })
 
-  it('completes the medicine flow with a prescription image (asking name for first-time user)', async () => {
+  it('completes the medicine flow with a prescription image', async () => {
     mockProvider.downloadMedia.mockResolvedValue({ mimeType: 'image/jpeg', buffer: Buffer.from('img') })
     await send('hi')
     await send('3')
@@ -285,12 +296,13 @@ describe('Conversation Booking Flow (current)', () => {
     expect(stateStore[PHONE].currentStep).toBe('MED_PRESCRIPTION')
   })
 
-  it('shows info/support/email options without leaving WELCOME', async () => {
+  it('shows info/support/email options and moves to SUPPORT step', async () => {
     await send('hi')
     for (const opt of ['4', '5', '6']) {
       const reply = await send(opt)
       expect(reply).toBeTruthy()
-      expect(stateStore[PHONE].currentStep).toBe('WELCOME')
+      expect(stateStore[PHONE].currentStep).toBe('SUPPORT')
+      await send('menu') // reset to WELCOME for next iteration
     }
   })
 
@@ -302,8 +314,7 @@ describe('Conversation Booking Flow (current)', () => {
   })
 
   it('rejects mobile numbers not matching exactly 10 digits', async () => {
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
-    await send('Jane Doe')
+    await send('hi'); await send('1'); await send('1'); await send('Jane Doe')
     let reply = await send('987654321') // 9 digits
     expect(reply).toContain('Invalid Mobile Number')
     reply = await send('98765432100') // 11 digits
@@ -313,12 +324,8 @@ describe('Conversation Booking Flow (current)', () => {
   })
 
   it('validates 6-digit PIN code in a separate question', async () => {
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
-    await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('Jaunpur')
-    let reply = await send('Civil Lines')
-    expect(reply).toContain('PIN Code')
-    expect(stateStore[PHONE].currentStep).toBe('PATIENT_PINCODE')
-    reply = await send('123') // invalid pin
+    await send('hi'); await send('1'); await send('1'); await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('2'); await send('1'); await send('1'); await send('1'); await send('Jaunpur'); await send('Civil Lines')
+    let reply = await send('123') // invalid pin
     expect(reply).toContain('Invalid PIN Code')
     reply = await send('232104') // valid pin
     expect(reply).toContain('Health Problem')
@@ -326,11 +333,16 @@ describe('Conversation Booking Flow (current)', () => {
   })
 
   it('handles Gynaecology Infertility visit options (2-10) and Option 11 for custom visit number', async () => {
-    departmentService.getActiveDepartments.mockResolvedValue([{ _id: 'deptGynae', name: 'Gynaecology & Obstetrics' }])
+    departmentService.getOpdWhatsAppDepartments.mockResolvedValue([{ _id: 'deptGynae', name: 'Gynaecology & Obstetrics' }])
     await send('hi')
-    await send('1') // OPD
-    await send('1') // Gynae dept
-    await send('1') // Old patient
+    await send('1') // OPD -> WHO_FOR
+    await send('1') // New -> PATIENT_NAME
+    await send('Jane')
+    await send('9876543210')
+    await send('30')
+    await send('2') // Female
+    await send('1') // OLD patient -> Dept
+    await send('1') // Gynae dept -> Infertility vs Others
     let reply = await send('1') // Infertility category
     expect(reply).toContain('2nd Visit')
     expect(reply).toContain('10th Visit')
@@ -353,9 +365,7 @@ describe('Conversation Booking Flow (current)', () => {
       new (await import('../src/middleware/errorHandler.js')).AppError('Patient already has a booking for this appointment date. Maximum 1 request per day is allowed.', 400)
     )
 
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
-    await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('Jaunpur')
-    await send('Civil Lines'); await send('232104'); await send('Fever')
+    await driveToReview()
     const reply = await send('1') // Confirm
 
     expect(reply).toContain('Booking Limit Reached')
@@ -367,9 +377,7 @@ describe('Conversation Booking Flow (current)', () => {
       new (await import('../src/middleware/errorHandler.js')).AppError('Dr. Smith has reached the maximum daily limit of 30 patients for 30/08/2026. Please select another date or doctor.', 400)
     )
 
-    await send('hi'); await send('1'); await send('1'); await send('2'); await send('1'); await send('1')
-    await send('Jane Doe'); await send('9876543210'); await send('25'); await send('1'); await send('Jaunpur')
-    await send('Civil Lines'); await send('232104'); await send('Fever')
+    await driveToReview()
     const reply = await send('1') // Confirm
 
     expect(reply).toContain('Daily OPD limit has crossed')
@@ -388,4 +396,3 @@ describe('Conversation Booking Flow (current)', () => {
     expect(mockProvider.sendTextMessage).toHaveBeenCalledWith(PHONE, '123456')
   })
 })
-

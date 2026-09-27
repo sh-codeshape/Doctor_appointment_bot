@@ -17,6 +17,7 @@ function mapPatient(row) {
     identityKey: row.identity_key || null,
     isOld: Boolean(row.is_old),
     lastVisited: row.last_visited || null,
+    meta: row.meta || {},
     createdAt: row.created_at,
   }
 }
@@ -254,6 +255,7 @@ class PatientRepository {
     const isOld = data.isOld !== undefined ? Boolean(data.isOld) : current.isOld
     const lastVisited = data.lastVisited !== undefined ? data.lastVisited : current.lastVisited
     const uhid = data.uhid !== undefined ? data.uhid : current.uhid
+    const meta = data.meta !== undefined ? data.meta : (current.meta || {})
 
     const [row] = await sql`
       UPDATE patients
@@ -267,7 +269,8 @@ class PatientRepository {
         pin_code = ${pinCode},
         is_old = ${isOld},
         last_visited = ${lastVisited},
-        uhid = ${uhid}
+        uhid = ${uhid},
+        meta = ${meta}
       WHERE id = ${id}
       RETURNING *
     `

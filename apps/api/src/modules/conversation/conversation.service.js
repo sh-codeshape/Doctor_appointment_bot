@@ -293,21 +293,21 @@ class ConversationService {
   async handleWelcome(phone, state, input) {
     switch (input) {
       case "1": {
-        // OPD
-        const deps = await departmentService.getOpdWhatsAppDepartments();
-        if (!deps.length) {
+        // OPD → identify patient FIRST
+        const patients = (await patientService.findAllByPhone(phone)) || [];
+        if (patients.length > 0) {
           await conversationRepo.upsert(phone, {
             currentFlow: "OPD_BOOKING",
-            currentStep: STEPS.OPD_DOCTOR,
+            currentStep: STEPS.WHO_FOR,
           });
-          const docs = await doctorService.getActiveDoctors();
-          return this.sendMessage(phone, MESSAGES.doctors("All Doctors", docs));
+          return this.sendMessage(phone, MESSAGES.whoFor(patients));
         }
+        // No existing patients → go straight to name collection
         await conversationRepo.upsert(phone, {
           currentFlow: "OPD_BOOKING",
-          currentStep: STEPS.OPD_DEPARTMENT,
+          currentStep: STEPS.PATIENT_NAME,
         });
-        return this.sendMessage(phone, MESSAGES.departments(deps));
+        return this.sendMessage(phone, MESSAGES.patientName());
       }
       case "2": {
         // Hospitalization
