@@ -36,7 +36,8 @@ function normalizeDoctor(d) {
     gender: d.gender || null,
     address: d.address || '',
     is_active: d.isActive ?? d.is_active ?? true,
-    maxPatientsPerDay: d.maxPatientsPerDay ?? 30,
+    maxNewPatients: d.maxNewPatients ?? d.max_new_patients ?? 40,
+    maxOldPatients: d.maxOldPatients ?? d.max_old_patients ?? 30,
     created_at: d.createdAt || d.created_at,
   }
 }
@@ -62,7 +63,8 @@ function toBackendDoctor(formData) {
     image: formData.image || formData.avatar || formData.ImageUrl || formData.imageUrl || '',
     gender: formData.gender ? String(formData.gender).toLowerCase() : undefined,
     address: formData.address || '',
-    maxPatientsPerDay: Number(formData.maxPatientsPerDay || 30),
+    maxNewPatients: Number(formData.maxNewPatients || 40),
+    maxOldPatients: Number(formData.maxOldPatients || 30),
   }
 }
 

@@ -41,7 +41,8 @@ const emptyForm = {
   phone: '',
   email: '',
   displaySchedule: '',
-  maxPatientsPerDay: 30,
+  maxNewPatients: 40,
+  maxOldPatients: 30,
   address: '',
   avatar: '',
 }
@@ -122,7 +123,8 @@ export default function Doctors() {
       phone: doctor.phone || '',
       email: doctor.email || '',
       displaySchedule: doctor.displaySchedule || '',
-      maxPatientsPerDay: doctor.maxPatientsPerDay ?? 30,
+      maxNewPatients: doctor.maxNewPatients ?? 40,
+      maxOldPatients: doctor.maxOldPatients ?? 30,
       address: doctor.address || '',
       avatar: doctor.avatar || doctor.image || '',
     })
@@ -179,7 +181,8 @@ export default function Doctors() {
       phone: form.phone,
       email: form.email,
       displaySchedule: form.displaySchedule,
-      maxPatientsPerDay: Number(form.maxPatientsPerDay || 30),
+      maxNewPatients: Number(form.maxNewPatients || 40),
+      maxOldPatients: Number(form.maxOldPatients || 30),
       address: form.address,
       avatar: form.avatar,
     }
@@ -306,10 +309,10 @@ export default function Doctors() {
                   </div>
                 )}
 
-                {doctor.maxPatientsPerDay && (
+                {(doctor.maxNewPatients || doctor.maxOldPatients) && (
                   <div className={styles.metaRow}>
-                    <span className={styles.metaLabel}>Max Patients</span>
-                    <span className={styles.metaValue}>{doctor.maxPatientsPerDay} / day</span>
+                    <span className={styles.metaLabel}>Max New / Old</span>
+                    <span className={styles.metaValue}>{doctor.maxNewPatients ?? 40} / {doctor.maxOldPatients ?? 30} per day</span>
                   </div>
                 )}
 
@@ -634,14 +637,31 @@ export default function Doctors() {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Max Patients / Day</label>
+              <label className={styles.formLabel}>Max New Patients/Day</label>
               <div className={styles.inputWithIcon}>
                 <Users size={16} className={styles.inputLeadingIcon} />
                 <input
                   className={styles.formInput}
                   type="number"
-                  value={form.maxPatientsPerDay}
-                  onChange={(e) => setForm({ ...form, maxPatientsPerDay: e.target.value })}
+                  value={form.maxNewPatients}
+                  onChange={(e) => setForm({ ...form, maxNewPatients: e.target.value })}
+                  placeholder="40"
+                  min="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.formRowTwo}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Max Old Patients/Day</label>
+              <div className={styles.inputWithIcon}>
+                <Users size={16} className={styles.inputLeadingIcon} />
+                <input
+                  className={styles.formInput}
+                  type="number"
+                  value={form.maxOldPatients}
+                  onChange={(e) => setForm({ ...form, maxOldPatients: e.target.value })}
                   placeholder="30"
                   min="1"
                 />

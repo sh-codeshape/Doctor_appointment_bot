@@ -158,8 +158,8 @@ export default function PrescriptionPage() {
 
   // Handlers for adding medicine
   const handleAddMedicine = (medObj) => {
-    if (selectedMeds.length >= 15) {
-      toast.error('Maximum 15 medicines allowed per slip')
+    if (selectedMeds.length >= 19) {
+      toast.error('Maximum 19 medicines allowed per slip')
       return
     }
     if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase() && m.target === addTarget)) {
