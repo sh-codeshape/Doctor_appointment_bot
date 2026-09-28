@@ -271,6 +271,17 @@ router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, nex
   } catch (err) { next(err) }
 })
 
+router.delete('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
+  try {
+    const id = req.params.id
+    const [deleted] = await sql`DELETE FROM medicines WHERE id = ${id} RETURNING *`
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Medicine not found' })
+    }
+    res.json({ success: true, data: deleted })
+  } catch (err) { next(err) }
+})
+
 // Medicine Remarks API
 router.get('/medicine-remarks', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
   try {
