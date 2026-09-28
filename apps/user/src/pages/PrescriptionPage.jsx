@@ -530,7 +530,6 @@ export default function PrescriptionPage() {
                 <th>Medicine Name</th>
                 <th style={{ width: 90 }}>For</th>
                 <th style={{ width: 100 }}>Dosage</th>
-                <th style={{ width: 130 }}>Frequency</th>
                 <th style={{ width: 100 }}>Duration</th>
                 <th style={{ width: 140 }}>Remarks</th>
                 <th style={{ width: 34 }}></th>
@@ -569,14 +568,6 @@ export default function PrescriptionPage() {
                       value={item.dosage}
                       onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
                       list="dosages-list"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className={styles.input}
-                      style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.frequency}
-                      onChange={(e) => handleUpdateMed(index, 'frequency', e.target.value)}
                     />
                   </td>
                   <td>

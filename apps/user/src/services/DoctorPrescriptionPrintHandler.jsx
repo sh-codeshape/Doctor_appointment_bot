@@ -148,13 +148,12 @@ export class DoctorPrescriptionPrintHandler {
     <table class="p-tbl">
       <thead>
         <tr>
-          <th style="width:30px; text-align:center;">Sr.No.</th>
-          <th>Medicine Name</th>
-          <th style="width:60px;">Dosage</th>
-          <th style="width:70px;">Frequency</th>
-          <th style="width:50px;">Duration</th>
-          <th style="width:80px;">Remarks</th>
-          <th style="width:25px; text-align:center;">☐</th>
+          <th style="width:8%; text-align:center;">Sr.No.</th>
+          <th style="width:30%;">Medicine Name</th>
+          <th style="width:20%;">Dosage</th>
+          <th style="width:15%;">Duration</th>
+          <th style="width:22%;">Remarks</th>
+          <th style="width:5%; text-align:center;">☐</th>
         </tr>
       </thead>
       <tbody>`
@@ -163,7 +162,6 @@ export class DoctorPrescriptionPrintHandler {
             <td style="text-align:center; font-weight:600;">${idx + 1}</td>
             <td style="font-weight:700; color:#0369a1;">${pm.name || pm.medicine_name || ''}</td>
             <td>${pm.dosage || '—'}</td>
-            <td>${pm.frequency || '—'}</td>
             <td>${pm.duration || '—'}</td>
             <td>${pm.remarks || ''}</td>
             <td style="text-align:center;"><div class="chk"></div></td>
@@ -181,13 +179,12 @@ export class DoctorPrescriptionPrintHandler {
     <table class="p-tbl">
       <thead>
         <tr>
-          <th style="width:38px; text-align:center;">Sr. No.</th>
-          <th>Medicine Name</th>
-          <th style="width:90px;">Dosage</th>
-          <th style="width:100px;">Frequency</th>
-          <th style="width:80px;">Duration</th>
-          <th style="width:120px;">Remarks</th>
-          <th style="width:38px; text-align:center;">☐</th>
+          <th style="width:5%; text-align:center;">Sr. No.</th>
+          <th style="width:30%;">Medicine Name</th>
+          <th style="width:20%;">Dosage</th>
+          <th style="width:15%;">Duration</th>
+          <th style="width:25%;">Remarks</th>
+          <th style="width:5%; text-align:center;">☐</th>
         </tr>
       </thead>
       <tbody>`
@@ -196,7 +193,6 @@ export class DoctorPrescriptionPrintHandler {
           <td style="text-align:center; font-weight:600;">${idx + 1}</td>
           <td style="font-weight:700; color:#0369a1;">${pm.name || pm.medicine_name || ''}</td>
           <td>${pm.dosage || '—'}</td>
-          <td>${pm.frequency || '—'}</td>
           <td>${pm.duration || '—'}</td>
           <td>${pm.remarks || ''}</td>
           <td style="text-align:center;"><div class="chk"></div></td>
@@ -220,10 +216,10 @@ export class DoctorPrescriptionPrintHandler {
     <table class="p-tbl">
       <thead>
         <tr>
-          <th style="width:30px; text-align:center;">Sr.No.</th>
-          <th>Test Name</th>
-          <th style="width:120px;">Remarks</th>
-          <th style="width:25px; text-align:center;">☐</th>
+          <th style="width:10%; text-align:center;">Sr.No.</th>
+          <th style="width:45%;">Test Name</th>
+          <th style="width:35%;">Remarks</th>
+          <th style="width:10%; text-align:center;">☐</th>
         </tr>
       </thead>
       <tbody>`
@@ -247,10 +243,10 @@ export class DoctorPrescriptionPrintHandler {
     <table class="p-tbl">
       <thead>
         <tr>
-          <th style="width:38px; text-align:center;">Sr. No.</th>
-          <th>Test Name</th>
-          <th style="width:250px;">Remarks</th>
-          <th style="width:38px; text-align:center;">☐</th>
+          <th style="width:5%; text-align:center;">Sr. No.</th>
+          <th style="width:50%;">Test Name</th>
+          <th style="width:40%;">Remarks</th>
+          <th style="width:5%; text-align:center;">☐</th>
         </tr>
       </thead>
       <tbody>`
@@ -349,7 +345,7 @@ export class DoctorPrescriptionPrintHandler {
   table.p-tbl { width: 100%; border-collapse: collapse; font-size: 9.5px; }
   table.p-tbl th { background: #f8fafc; color: #0369a1; font-weight: 700; padding: 3px 6px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; text-align: left; }
   table.p-tbl th:last-child { border-right: none; }
-  table.p-tbl td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; color: #0f172a; height: 18px; overflow: hidden; white-space: nowrap; }
+  table.p-tbl td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; color: #0f172a; word-wrap: break-word; white-space: pre-wrap; }
   table.p-tbl td:last-child { border-right: none; }
   .chk { display: inline-block; width: 11px; height: 11px; border: 1.2px solid #0369a1; border-radius: 2px; text-align: center; line-height: 9px; font-size: 8px; font-weight: 800; color: #0369a1; }
   .section-full-header { display: flex; justify-content: space-between; align-items: flex-end; background: #f1f5f9; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 10px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
@@ -404,7 +400,7 @@ export class DoctorPrescriptionPrintHandler {
       <div class="box-header">VISIT &amp; CLINICAL DETAILS</div>
       <div class="field-row"><span class="field-name">Visit Type:</span><span class="field-val">${isIPD ? 'Hospitalization (IPD Admission)' : 'OPD Appointment'}</span></div>
       <div class="field-row"><span class="field-name">${isIPD ? 'Admission Date:' : 'Appt Date:'}</span><span class="field-val">${appointmentDate}</span></div>
-      <div class="field-row"><span class="field-name">Dept / Doctor:</span><span class="field-val">${booking.doctor_name || 'General Doctor'}${booking.doctor_specialization ? ' — ' + booking.doctor_specialization : ''}</span></div>
+      <div class="field-row"><span class="field-name">Doctor:</span><span class="field-val">${booking.doctor_name || 'General Doctor'}${booking.doctor_qualification ? ' — ' + booking.doctor_qualification : ''}</span></div>
     </div>
   </div>
 
