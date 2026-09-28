@@ -95,7 +95,7 @@ export default function ManualPrescriptionPage() {
         setAvailableRemarks(remarksRes.data || [])
         setAvailableDosages(dosagesRes.data || [])
       } catch (err) {
-        console.error('Failed to load catalog data', err)
+        toast.error('Failed to load catalog data')
       } finally {
         if (active) setIsLoading(false)
       }
@@ -295,32 +295,7 @@ export default function ManualPrescriptionPage() {
       // Helper to check if an ID is a temporary timestamp (newly added custom item)
       const isNew = (id) => typeof id === 'number' && id > 1000000000000
 
-      // 1. Auto-add new or update existing catalog items so doctors don't retype defaults
-      if (selectedMeds.length > 0 || selectedTests.length > 0 || selectedAdvice.length > 0) {
-        await Promise.allSettled([
-          ...selectedMeds.map((med) => {
-            const data = {
-              department_id: targetDeptId,
-              name: med.name,
-              default_dosage: med.dosage,
-              default_frequency: med.frequency,
-              default_duration: med.duration,
-              remarks: med.remarks,
-            }
-            return isNew(med.id)
-              ? prescriptionService.addMedicine(data)
-              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage })
-          }),
-          ...selectedTests.map((test) => {
-            const data = { department_id: targetDeptId, name: test.name }
-            return isNew(test.id) ? prescriptionService.addLabTest(data) : prescriptionService.updateLabTest(test.id, data)
-          }),
-          ...selectedAdvice.map((adv) => {
-            const data = { department_id: targetDeptId, advice: adv.advice }
-            return isNew(adv.id) ? prescriptionService.addAdditionalAdvice(data) : prescriptionService.updateAdditionalAdvice(adv.id, data)
-          }),
-        ])
-      }
+      // Removed auto-add catalog items logic to prevent api error toasts during print.
 
       // 2. Prepare full slip data object for doctor prescription rendering
       const slipData = {
