@@ -191,7 +191,7 @@ export default function PrescriptionPage() {
 
   const handleUpdateMed = (index, field, val) => {
     const updated = [...selectedMeds]
-    updated[index][field] = val
+    updated[index] = { ...updated[index], [field]: val }
     setSelectedMeds(updated)
   }
 
@@ -226,7 +226,7 @@ export default function PrescriptionPage() {
 
   const handleUpdateTest = (index, field, val) => {
     const updated = [...selectedTests]
-    updated[index][field] = val
+    updated[index] = { ...updated[index], [field]: val }
     setSelectedTests(updated)
   }
 
@@ -259,7 +259,7 @@ export default function PrescriptionPage() {
 
   const handleUpdateAdvice = (index, field, val) => {
     const updated = [...selectedAdvice]
-    updated[index][field] = val
+    updated[index] = { ...updated[index], [field]: val }
     setSelectedAdvice(updated)
   }
 
@@ -565,7 +565,7 @@ export default function PrescriptionPage() {
                     <input
                       className={styles.input}
                       style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.dosage}
+                      value={item.dosage || ''}
                       onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
                       list="dosages-list"
                     />
@@ -574,7 +574,7 @@ export default function PrescriptionPage() {
                     <input
                       className={styles.input}
                       style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.duration}
+                      value={item.duration || ''}
                       onChange={(e) => handleUpdateMed(index, 'duration', e.target.value)}
                     />
                   </td>
@@ -582,7 +582,7 @@ export default function PrescriptionPage() {
                     <input
                       className={styles.input}
                       style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.remarks}
+                      value={item.remarks || ''}
                       onChange={(e) => handleUpdateMed(index, 'remarks', e.target.value)}
                       list="remarks-list"
                     />
