@@ -562,13 +562,27 @@ export default function PrescriptionPage() {
                     </span>
                   </td>
                   <td>
-                    <input
-                      className={styles.input}
-                      style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.dosage || ''}
-                      onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
-                      list="dosages-list"
-                    />
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <input
+                        className={styles.input}
+                        style={{ padding: '4px 8px', fontSize: 12, flex: 1 }}
+                        value={item.dosage || ''}
+                        onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
+                        placeholder="Dosage"
+                      />
+                      <select
+                        style={{ width: 20, padding: 0, cursor: 'pointer' }}
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleUpdateMed(index, 'dosage', e.target.value)
+                        }}
+                      >
+                        <option value="">▼</option>
+                        {availableDosages.map(d => (
+                          <option key={d.id} value={d.dosage}>{d.dosage}</option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
                   <td>
                     <input
@@ -579,13 +593,27 @@ export default function PrescriptionPage() {
                     />
                   </td>
                   <td>
-                    <input
-                      className={styles.input}
-                      style={{ padding: '4px 8px', fontSize: 12 }}
-                      value={item.remarks || ''}
-                      onChange={(e) => handleUpdateMed(index, 'remarks', e.target.value)}
-                      list="remarks-list"
-                    />
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <input
+                        className={styles.input}
+                        style={{ padding: '4px 8px', fontSize: 12, flex: 1 }}
+                        value={item.remarks || ''}
+                        onChange={(e) => handleUpdateMed(index, 'remarks', e.target.value)}
+                        placeholder="Remarks"
+                      />
+                      <select
+                        style={{ width: 20, padding: 0, cursor: 'pointer' }}
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleUpdateMed(index, 'remarks', e.target.value)
+                        }}
+                      >
+                        <option value="">▼</option>
+                        {availableRemarks.map(r => (
+                          <option key={r.id} value={r.remark}>{r.remark}</option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
                   <td>
                     <button className={styles.removeBtn} onClick={() => handleRemoveMed(index)}>
