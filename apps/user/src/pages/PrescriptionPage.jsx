@@ -110,7 +110,7 @@ export default function PrescriptionPage() {
         setSelectedTests(rx.tests || [])
         setSelectedAdvice(rx.additional_advice || rx.advice || [])
       } catch (err) {
-        toast.error('Failed to load patient consultation data')
+        console.error('Failed to load patient consultation data', err)
       } finally {
         if (active) setIsLoading(false)
       }

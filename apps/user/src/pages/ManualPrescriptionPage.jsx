@@ -95,7 +95,7 @@ export default function ManualPrescriptionPage() {
         setAvailableRemarks(remarksRes.data || [])
         setAvailableDosages(dosagesRes.data || [])
       } catch (err) {
-        toast.error('Failed to load catalog data')
+        console.error('Failed to load catalog data', err)
       } finally {
         if (active) setIsLoading(false)
       }
