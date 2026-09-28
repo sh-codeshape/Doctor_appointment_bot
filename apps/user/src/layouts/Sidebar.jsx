@@ -45,6 +45,7 @@ const NAV_BY_ROLE = {
     { path: '/doctors', label: 'Doctors', icon: 'Stethoscope' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
+    { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
     { path: '/staff', label: 'Staff', icon: 'ClipboardList' },
     { path: '/reports', label: 'Reports', icon: 'BarChart3' },
     { path: '/settings', label: 'Settings', icon: 'Settings' },
@@ -91,12 +92,14 @@ const NAV_BY_ROLE = {
     { path: '/doctors', label: 'Doctors', icon: 'Stethoscope' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
+    { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
     { path: '/staff', label: 'Staff', icon: 'ClipboardList' },
     { path: '/reports', label: 'Reports', icon: 'BarChart3' },
   ],
   doctor: [
     { path: '/my-patients', label: 'My Patients', icon: 'Users' },
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
+    { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
   ],
   receptionist: [
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
