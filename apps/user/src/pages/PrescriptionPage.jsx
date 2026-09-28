@@ -61,7 +61,7 @@ export default function PrescriptionPage() {
   const [customMedName, setCustomMedName] = useState('')
   const [customTestName, setCustomTestName] = useState('')
   const [customAdviceName, setCustomAdviceName] = useState('')
-  const [addTarget, setAddTarget] = useState('General') // 'General' | 'Female Partner' | 'Male Partner'
+  const [addTarget, setAddTarget] = useState('Female Partner') // 'General' | 'Female Partner' | 'Male Partner'
 
   // Load booking details & existing prescription + catalogs in parallel
   useEffect(() => {
