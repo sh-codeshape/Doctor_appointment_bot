@@ -25,6 +25,7 @@ function normalizeBooking(b) {
     pinCode: patObj?.pinCode || patObj?.pin_code || b.patient_pin_code || b.pinCode || '',
     doctor_id: docObj?.id || docObj?._id || b.doctor_id || b.doctorId,
     doctor_name: docObj?.name || b.doctor_name || 'Unknown',
+    doctor_qualification: docObj?.qualification || b.doctor_qualification || '',
     doctor_specialization: docObj?.specialization || b.doctor_specialization || b.department_name || '',
     departmentId: b.departmentId?.id || b.departmentId?._id || b.departmentId || b.department_id || docObj?.departmentId || null,
     department_id: b.departmentId?.id || b.departmentId?._id || b.departmentId || b.department_id || docObj?.departmentId || null,
