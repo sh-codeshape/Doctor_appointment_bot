@@ -97,6 +97,7 @@ async function start() {
   }
 
   app.listen(env.port, () => {
+    logger.info("=== DOCBOT API V2 WITH NEW ROUTES STARTED ===");
     logger.info(`DocBot API running on http://localhost:${env.port}`);
     logger.info("WhatsApp provider: Meta Cloud API");
     logger.info(`Environment: ${env.nodeEnv}`);
