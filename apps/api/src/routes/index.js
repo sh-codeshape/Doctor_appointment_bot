@@ -107,7 +107,7 @@ router.get('/medicines', requireRole(...STAFF, DOCTOR), async (req, res, next) =
           FROM medicines m 
           LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
           LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
-          WHERE m.is_active = true AND m.department_id = ${department_id} AND m.name ILIKE ${q} 
+          WHERE m.is_active = true AND m.department_id = ${department_id} AND (m.name ILIKE ${q} OR m.dosage_form ILIKE ${q}) 
           ORDER BY m.name ASC
         `
       } else {
@@ -116,7 +116,7 @@ router.get('/medicines', requireRole(...STAFF, DOCTOR), async (req, res, next) =
           FROM medicines m 
           LEFT JOIN medicine_remarks r ON m.remark_id = r.id 
           LEFT JOIN medicine_dosages d ON m.dosage_id = d.id 
-          WHERE m.is_active = true AND m.name ILIKE ${q} 
+          WHERE m.is_active = true AND (m.name ILIKE ${q} OR m.dosage_form ILIKE ${q}) 
           ORDER BY m.name ASC
         `
       }
@@ -226,7 +226,7 @@ router.post('/savemedicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
   try {
     const { id } = req.params
-    const { remarks, default_dosage } = req.body
+    const { remarks, default_dosage, dosage_form } = req.body
     
     let rId = null
     if (remarks && remarks.trim()) {
@@ -255,6 +255,7 @@ router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, nex
     const updates = {}
     if (rId !== null) updates.remark_id = rId
     if (dsgId !== null) updates.dosage_id = dsgId
+    if (dosage_form) updates.dosage_form = dosage_form
 
     if (Object.keys(updates).length > 0) {
       const [updated] = await sql`

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Trash2, Printer, Save, Pill, Activity, TestTube, ArrowLeft, Stethoscope, CheckCircle } from 'lucide-react'
+import { Search, Plus, Trash2, Printer, Save, Pill, Activity, TestTube, ArrowLeft, Stethoscope, CheckCircle, ChevronDown } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
 import Card from '../components/common/Card'
 import { Loader } from '../components/common/Loader'
@@ -59,6 +59,7 @@ export default function PrescriptionPage() {
   const [availableDosages, setAvailableDosages] = useState([])
 
   const [customMedName, setCustomMedName] = useState('')
+  const [customMedDosageForm, setCustomMedDosageForm] = useState('TAB')
   const [customTestName, setCustomTestName] = useState('')
   const [customAdviceName, setCustomAdviceName] = useState('')
   const [addTarget, setAddTarget] = useState('Female Partner') // 'General' | 'Female Partner' | 'Male Partner'
@@ -178,15 +179,37 @@ export default function PrescriptionPage() {
     setSelectedMeds([...selectedMeds, newItem])
   }
 
-  const handleAddCustomMedicine = () => {
+  const handleAddCustomMedicine = async () => {
     if (!customMedName.trim()) return
-    handleAddMedicine({
+    const medData = {
       name: customMedName.trim(),
+      dosage_form: customMedDosageForm,
       default_dosage: '1-0-1',
       default_frequency: 'Twice daily',
       default_duration: '5 days',
-    })
+    }
+    
+    try {
+      const res = await prescriptionService.addMedicine(medData)
+      if (res && res.data) {
+        handleAddMedicine(res.data)
+      } else {
+        handleAddMedicine(medData)
+      }
+      
+      // refresh the catalog list to include the new medicine
+      const dId = addTarget === 'General' ? 1 : null
+      prescriptionService.getMedicines({ department_id: dId, search: medSearch })
+        .then(r => { if (r.data) setAvailableMeds(r.data) })
+        .catch(console.error)
+        
+    } catch(err) {
+      console.error(err)
+      handleAddMedicine(medData)
+    }
+    
     setCustomMedName('')
+    setCustomMedDosageForm('TAB')
   }
 
   const handleUpdateMed = (index, field, val) => {
@@ -324,7 +347,7 @@ export default function PrescriptionPage() {
             }
             return isNew(med.id)
               ? prescriptionService.addMedicine(data)
-              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage })
+              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage, dosage_form: med.dosage_form })
           }),
           ...selectedTests.map((test) => {
             const data = { department_id: targetDeptId, name: test.name }
@@ -482,6 +505,25 @@ export default function PrescriptionPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 6 }}>
+            <div className={styles.dropdownWrapper} style={{ width: 80 }}>
+              <select
+                className={styles.dropdownSelect}
+                value={customMedDosageForm}
+                onChange={(e) => setCustomMedDosageForm(e.target.value)}
+              >
+                <option value="TAB">TAB</option>
+                <option value="CAP">CAP</option>
+                <option value="SYR">SYR</option>
+                <option value="INJ">INJ</option>
+                <option value="DROPS">DROPS</option>
+                <option value="OINT">OINT</option>
+                <option value="CRM">CRM</option>
+              </select>
+              <div className={styles.dropdownIcon} style={{ background: '#f8fafc', color: '#0f172a' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>{customMedDosageForm}</span>
+                <ChevronDown size={14} />
+              </div>
+            </div>
             <input
               className={styles.input}
               placeholder="Custom medicine..."
@@ -528,6 +570,7 @@ export default function PrescriptionPage() {
               <tr>
                 <th style={{ width: 30 }}>#</th>
                 <th>Medicine Name</th>
+                <th style={{ width: 80 }}>Type</th>
                 <th style={{ width: 90 }}>For</th>
                 <th style={{ width: 100 }}>Dosage</th>
                 <th style={{ width: 100 }}>Duration</th>
@@ -547,6 +590,27 @@ export default function PrescriptionPage() {
                       onChange={(e) => handleUpdateMed(index, 'name', e.target.value)}
                       placeholder="Medicine name..."
                     />
+                  </td>
+                  <td>
+                    <div className={styles.dropdownWrapper} style={{ width: 65, height: 26 }}>
+                      <select
+                        className={styles.dropdownSelect}
+                        value={item.dosage_form || 'TAB'}
+                        onChange={(e) => handleUpdateMed(index, 'dosage_form', e.target.value)}
+                      >
+                        <option value="TAB">TAB</option>
+                        <option value="CAP">CAP</option>
+                        <option value="SYR">SYR</option>
+                        <option value="INJ">INJ</option>
+                        <option value="DROPS">DROPS</option>
+                        <option value="OINT">OINT</option>
+                        <option value="CRM">CRM</option>
+                      </select>
+                      <div className={styles.dropdownIcon} style={{ background: '#f8fafc', color: '#0f172a' }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, marginRight: 2 }}>{item.dosage_form || 'TAB'}</span>
+                        <ChevronDown size={12} />
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <span style={{
@@ -570,18 +634,23 @@ export default function PrescriptionPage() {
                         onChange={(e) => handleUpdateMed(index, 'dosage', e.target.value)}
                         placeholder="Dosage"
                       />
-                      <select
-                        style={{ width: 20, padding: 0, cursor: 'pointer' }}
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) handleUpdateMed(index, 'dosage', e.target.value)
-                        }}
-                      >
-                        <option value="">▼</option>
-                        {availableDosages.map(d => (
-                          <option key={d.id} value={d.dosage}>{d.dosage}</option>
-                        ))}
-                      </select>
+                      <div className={styles.dropdownWrapper} style={{ width: 24, height: 26 }}>
+                        <select
+                          className={styles.dropdownSelect}
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) handleUpdateMed(index, 'dosage', e.target.value)
+                          }}
+                        >
+                          <option value="">--</option>
+                          {availableDosages.map(d => (
+                            <option key={d.id} value={d.dosage}>{d.dosage}</option>
+                          ))}
+                        </select>
+                        <div className={styles.dropdownIcon}>
+                          <ChevronDown size={14} />
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td>
@@ -601,18 +670,23 @@ export default function PrescriptionPage() {
                         onChange={(e) => handleUpdateMed(index, 'remarks', e.target.value)}
                         placeholder="Remarks"
                       />
-                      <select
-                        style={{ width: 20, padding: 0, cursor: 'pointer' }}
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) handleUpdateMed(index, 'remarks', e.target.value)
-                        }}
-                      >
-                        <option value="">▼</option>
-                        {availableRemarks.map(r => (
-                          <option key={r.id} value={r.remark}>{r.remark}</option>
-                        ))}
-                      </select>
+                      <div className={styles.dropdownWrapper} style={{ width: 24, height: 26 }}>
+                        <select
+                          className={styles.dropdownSelect}
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) handleUpdateMed(index, 'remarks', e.target.value)
+                          }}
+                        >
+                          <option value="">--</option>
+                          {availableRemarks.map(r => (
+                            <option key={r.id} value={r.remark}>{r.remark}</option>
+                          ))}
+                        </select>
+                        <div className={styles.dropdownIcon}>
+                          <ChevronDown size={14} />
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td>
