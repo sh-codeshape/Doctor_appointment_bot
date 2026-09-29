@@ -5,9 +5,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: docbot
-      POSTGRES_PASSWORD: docbot
-      POSTGRES_DB: docbot
+      POSTGRES_USER: ${DB_USER:-docbot}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-docbot}
+      POSTGRES_DB: ${DB_NAME:-docbot}
     volumes:
       - docbot-postgres-data:/var/lib/postgresql/data
       - ./backup.sql:/docker-entrypoint-initdb.d/01_backup.sql:ro
@@ -34,7 +34,7 @@ services:
     container_name: docbot-dbmate
     command: ["up"]
     environment:
-      DATABASE_URL: postgres://docbot:docbot@postgres:5432/docbot?sslmode=disable
+      DATABASE_URL: postgres://${DB_USER:-docbot}:${DB_PASSWORD:-docbot}@${DB_HOST:-postgres}:5432/${DB_NAME:-docbot}?sslmode=disable
     volumes:
       - ${DBMATE_PATH}:/db/migrations
     depends_on:
@@ -45,10 +45,10 @@ services:
     image: prodrigestivill/postgres-backup-local
     restart: always
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=docbot
-      - POSTGRES_USER=docbot
-      - POSTGRES_PASSWORD=docbot
+      - POSTGRES_HOST=${BACKUP_DB_HOST:-${DB_HOST:-postgres}}
+      - POSTGRES_DB=${BACKUP_DB_NAME:-${DB_NAME:-docbot}}
+      - POSTGRES_USER=${BACKUP_DB_USER:-${DB_USER:-docbot}}
+      - POSTGRES_PASSWORD=${BACKUP_DB_PASSWORD:-${DB_PASSWORD:-docbot}}
       - SCHEDULE=@daily
       - BACKUP_KEEP_DAYS=7
     volumes:

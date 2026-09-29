@@ -38,8 +38,12 @@ jobs:
           script: |
             cd ${{ secrets.PROJECT_PATH }}
 
+            # Trigger a manual database backup before deployment
+            docker compose -f docker-compose.yml exec -T pgbackups /backup.sh || echo "Backup failed, but continuing deployment..."
+
             git pull origin main
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/docbot-api:latest
 
+            # Update the API container and restart it
             docker compose -f docker-compose.yml up -d api
