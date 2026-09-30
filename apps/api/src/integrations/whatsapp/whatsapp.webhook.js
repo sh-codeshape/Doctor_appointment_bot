@@ -17,10 +17,13 @@ export function createWebhookRouter(provider) {
   // POST — incoming messages
   router.post("/", async (req, res) => {
     try {
-      logger.debug(`Incoming webhook payload: ${JSON.stringify(req.body)}`);
+      console.log(`\n--- INCOMING WEBHOOK PAYLOAD ---`)
+      console.log(JSON.stringify(req.body, null, 2))
+      console.log(`--------------------------------\n`)
       const message = provider.parseIncomingMessage(req);
 
       if (!message) {
+        console.log(`Payload ignored by parser (likely a status update or unsupported type).`)
         return res.status(200).send("OK"); // Acknowledge but ignore (status updates, etc.)
       }
 
