@@ -160,7 +160,7 @@ export class DoctorPrescriptionPrintHandler {
         meds.forEach((pm, idx) => {
           html += `<tr>
             <td style="text-align:center; font-weight:600;">${idx + 1}</td>
-            <td style="font-weight:700; color:#0369a1;">${pm.dosage_form ? pm.dosage_form + '-' : ''}${pm.name || pm.medicine_name || ''}</td>
+            <td style="font-weight:700; color:#0369a1;">${(pm.dosage_form || 'TAB')} - ${pm.name || pm.medicine_name || ''}</td>
             <td>${pm.dosage || '—'}</td>
             <td>${pm.duration || '—'}</td>
             <td>${pm.remarks || ''}</td>
@@ -191,7 +191,7 @@ export class DoctorPrescriptionPrintHandler {
       meds.forEach((pm, idx) => {
         html += `<tr>
           <td style="text-align:center; font-weight:600;">${idx + 1}</td>
-          <td style="font-weight:700; color:#0369a1;">${pm.dosage_form ? pm.dosage_form + '-' : ''}${pm.name || pm.medicine_name || ''}</td>
+          <td style="font-weight:700; color:#0369a1;">${(pm.dosage_form || 'TAB')} - ${pm.name || pm.medicine_name || ''}</td>
           <td>${pm.dosage || '—'}</td>
           <td>${pm.duration || '—'}</td>
           <td>${pm.remarks || ''}</td>
