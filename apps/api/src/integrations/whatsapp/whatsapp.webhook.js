@@ -17,6 +17,7 @@ export function createWebhookRouter(provider) {
   // POST — incoming messages
   router.post('/', async (req, res) => {
     try {
+      logger.debug(`Incoming webhook payload: ${JSON.stringify(req.body)}`)
       const message = provider.parseIncomingMessage(req)
 
       if (!message) {
