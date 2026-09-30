@@ -155,6 +155,7 @@ export default function ManualPrescriptionPage() {
     const newItem = {
       id: medObj.id || Date.now(),
       name: medObj.name,
+      dosage_form: medObj.dosage_form,
       dosage: medObj.default_dosage || '1-0-1',
       frequency: medObj.default_frequency || 'Twice daily',
       duration: medObj.default_duration || '5 days',
