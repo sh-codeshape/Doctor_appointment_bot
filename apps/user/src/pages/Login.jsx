@@ -152,47 +152,6 @@ export default function Login() {
             </div>
           </form>
 
-          {/* Demo Access Panel */}
-          <div className={styles.demoSection}>
-            <div className={styles.demoHeader}>
-              <Sparkles size={14} />
-              <span>Frontend Demo Access</span>
-            </div>
-            
-            <div className={styles.demoRoleChips}>
-              {DEMO_ACCOUNTS.map((a) => {
-                const isSelected = email === a.email
-                return (
-                  <button
-                    key={a.email}
-                    type="button"
-                    onClick={() => fillDemo(a.email, a.label)}
-                    className={`${styles.roleChip} ${isSelected ? styles.roleChipActive : ''}`}
-                    title={`Click to fill ${a.label} (${a.email})`}
-                  >
-                    <UserCheck size={12} />
-                    <span>{a.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Quick autofill active credential pill */}
-            <div className={styles.demoPillBox}>
-              <button
-                type="button"
-                className={styles.demoPill}
-                onClick={() => fillDemo('admin@docbot.com', 'Admin')}
-              >
-                <code className={styles.demoPillEmail}>
-                  {email || 'admin@docbot.com'}
-                </code>
-                <code className={styles.demoPillPassword}>
-                  {password ? '••••••••' : (mockUserPasswords[email] || 'admin123')}
-                </code>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Trash2, Printer, Save, Pill, Activity, TestTube, ArrowLeft, Stethoscope, CheckCircle, ChevronDown } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
@@ -11,10 +11,11 @@ import { printService } from '../services/printService'
 import { DoctorPrescriptionPrintHandler } from '../services/DoctorPrescriptionPrintHandler'
 import { mockDepartments } from '../data/mockData'
 import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
 import styles from './PrescriptionPage.module.css'
 
-export default function PrescriptionPage() {
-  const { bookingId } = useParams()
+export default function ManualPrescriptionPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -29,8 +30,14 @@ export default function PrescriptionPage() {
     onError: () => toast.error('Failed to update patient status'),
   })
 
-  const [booking, setBooking] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [patientDetails, setPatientDetails] = useState({
+    patient_name: '',
+    age: '',
+    gender: 'M',
+    mobile: '',
+    place: ''
+  })
+  const [isLoading, setIsLoading] = useState(false)
 
   // Local state for prescription
   const [vitals, setVitals] = useState({
@@ -64,21 +71,16 @@ export default function PrescriptionPage() {
   const [customAdviceName, setCustomAdviceName] = useState('')
   const [addTarget, setAddTarget] = useState('Female Partner') // 'General' | 'Female Partner' | 'Male Partner'
 
-  // Load booking details & existing prescription + catalogs in parallel
+  // Load catalogs in parallel
   useEffect(() => {
     let active = true
     async function loadData() {
       try {
         setIsLoading(true)
-        const data = await bookingService.getBooking(bookingId)
-        if (!active || !data) return
+        const deptId = deptFilter === 'all' ? null : deptFilter
+        const catalogParams = { department_id: deptId, search: '' }
 
-        // Enrich the booking AND fetch all 3 catalogs in parallel
-        const deptId = data.department_id ? String(data.department_id) : 'all'
-        const catalogParams = { department_id: deptId === 'all' ? null : deptId, search: '' }
-
-        const [enriched, medsRes, testsRes, adviceRes, remarksRes, dosagesRes] = await Promise.all([
-          printService.getSlipData(data).catch(() => data),
+        const [medsRes, testsRes, adviceRes, remarksRes, dosagesRes] = await Promise.all([
           prescriptionService.getMedicines(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getLabTests(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getAdditionalAdvice(catalogParams).catch(() => ({ data: [] })),
@@ -88,30 +90,13 @@ export default function PrescriptionPage() {
 
         if (!active) return
 
-        setBooking(enriched)
-        if (data.department_id) setDeptFilter(deptId)
         setAvailableMeds(medsRes.data || [])
         setAvailableTests(testsRes.data || [])
         setAvailableAdvice(adviceRes.data || [])
         setAvailableRemarks(remarksRes.data || [])
         setAvailableDosages(dosagesRes.data || [])
-
-        const rx = enriched.prescription || enriched.meta?.prescription || {}
-        setVitals(
-          rx.vitals || {
-            bp: '',
-            pulse: '',
-            temp: '',
-            weight: '',
-            spo2: '',
-          }
-        )
-        setDoctorNotes(rx.doctor_notes || '')
-        setSelectedMeds(rx.medicines || [])
-        setSelectedTests(rx.tests || [])
-        setSelectedAdvice(rx.additional_advice || rx.advice || [])
       } catch (err) {
-        toast.error('Failed to load patient consultation data')
+        toast.error('Failed to load catalog data')
       } finally {
         if (active) setIsLoading(false)
       }
@@ -120,7 +105,7 @@ export default function PrescriptionPage() {
     return () => {
       active = false
     }
-  }, [bookingId])
+  }, [])
 
   // Ref to track if initial catalog load is done (handled in the main useEffect above)
   const catalogLoaded = React.useRef(false)
@@ -159,8 +144,8 @@ export default function PrescriptionPage() {
 
   // Handlers for adding medicine
   const handleAddMedicine = (medObj) => {
-    if (selectedMeds.length >= 19) {
-      toast.error('Maximum 19 medicines allowed per slip')
+    if (selectedMeds.length >= 15) {
+      toast.error('Maximum 15 medicines allowed per slip')
       return
     }
     if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase() && m.target === addTarget)) {
@@ -197,8 +182,7 @@ export default function PrescriptionPage() {
         handleAddMedicine(medData)
       }
       
-      // refresh the catalog list to include the new medicine
-      const dId = addTarget === 'General' ? 1 : null
+      const dId = deptFilter === 'all' ? null : deptFilter
       prescriptionService.getMedicines({ department_id: dId, search: medSearch })
         .then(r => { if (r.data) setAvailableMeds(r.data) })
         .catch(console.error)
@@ -328,41 +312,20 @@ export default function PrescriptionPage() {
 
   const handlePrint = async () => {
     try {
-      const targetDeptId = booking?.department_id || (deptFilter !== 'all' ? deptFilter : 1)
+      const targetDeptId = deptFilter !== 'all' ? deptFilter : 1
 
       // Helper to check if an ID is a temporary timestamp (newly added custom item)
       const isNew = (id) => typeof id === 'number' && id > 1000000000000
 
-      // 1. Auto-add new or update existing catalog items so doctors don't retype defaults
-      if (selectedMeds.length > 0 || selectedTests.length > 0 || selectedAdvice.length > 0) {
-        await Promise.allSettled([
-          ...selectedMeds.map((med) => {
-            const data = {
-              department_id: targetDeptId,
-              name: med.name,
-              default_dosage: med.dosage,
-              default_frequency: med.frequency,
-              default_duration: med.duration,
-              remarks: med.remarks,
-            }
-            return isNew(med.id)
-              ? prescriptionService.addMedicine(data)
-              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage, dosage_form: med.dosage_form })
-          }),
-          ...selectedTests.map((test) => {
-            const data = { department_id: targetDeptId, name: test.name }
-            return isNew(test.id) ? prescriptionService.addLabTest(data) : prescriptionService.updateLabTest(test.id, data)
-          }),
-          ...selectedAdvice.map((adv) => {
-            const data = { department_id: targetDeptId, advice: adv.advice }
-            return isNew(adv.id) ? prescriptionService.addAdditionalAdvice(data) : prescriptionService.updateAdditionalAdvice(adv.id, data)
-          }),
-        ])
-      }
+      // Removed auto-add catalog items logic to prevent api error toasts during print.
 
       // 2. Prepare full slip data object for doctor prescription rendering
       const slipData = {
-        ...booking,
+        ...patientDetails,
+        type: 'OPD',
+        token_number: 'MANUAL',
+        doctor_name: user?.name || '',
+        date: new Date().toISOString(),
         prescription: {
           vitals,
           doctor_notes: doctorNotes,
@@ -383,37 +346,64 @@ export default function PrescriptionPage() {
     }
   }
 
-  const handlePrintAndComplete = async () => {
-    const success = await handlePrint()
-    if (success && booking?.id) {
-      statusMutation.mutate({ id: booking.id, status: 'completed' })
-    }
-  }
-
   if (isLoading) return <div className={styles.page}><Loader /></div>
-  if (!booking) return <div className={styles.page}><Card><p>Patient record not found.</p></Card></div>
 
   return (
     <div className={styles.page}>
       <PageHeader
-        title="Doctor Consultation & Prescription"
-        subtitle={`Patient: ${booking.patient_name} · Token: ${booking.token_number || 'T-001'}`}
+        title="Manual Prescription"
+        subtitle="Write a prescription for a walk-in or manual patient"
         icon={Stethoscope}
       />
 
-      {/* Patient Summary Bar */}
-      <div className={styles.patientHeaderCard}>
-        <div className={styles.patientMetaGroup}>
-          <div className={styles.patientTitle}>
-            {booking.patient_name} ({booking.age ? `${booking.age} Yrs` : '—'} / {booking.gender || '—'})
+      {/* Manual Patient Details Form */}
+      <Card title="Patient Details">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Patient Name *</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={patientDetails.patient_name}
+              onChange={(e) => setPatientDetails({ ...patientDetails, patient_name: e.target.value })}
+              placeholder="Full Name"
+              required
+            />
           </div>
-          <div className={styles.patientSub}>
-            UHID: <strong>{booking.uhid || 'KGN-PENDING'}</strong> · Mobile: +91 {booking.mobile} · Doctor:{' '}
-            {booking.doctor_name || 'General Doctor'} ({booking.doctor_specialization || 'OPD'})
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Age</label>
+            <input
+              type="number"
+              className={styles.input}
+              value={patientDetails.age}
+              onChange={(e) => setPatientDetails({ ...patientDetails, age: e.target.value })}
+              placeholder="e.g. 34"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Gender</label>
+            <select
+              className={styles.select}
+              value={patientDetails.gender}
+              onChange={(e) => setPatientDetails({ ...patientDetails, gender: e.target.value })}
+            >
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Mobile</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={patientDetails.mobile}
+              onChange={(e) => setPatientDetails({ ...patientDetails, mobile: e.target.value })}
+              placeholder="Mobile Number"
+            />
           </div>
         </div>
-        <div className={styles.tokenBadge}>TOKEN: {booking.token_number || 'T-001'}</div>
-      </div>
+      </Card>
 
       {/* 1. Doctor Notes & Clinical Diagnosis */}
       <div className={styles.sectionCard}>
@@ -950,22 +940,14 @@ export default function PrescriptionPage() {
       {/* Page Footer Actions */}
       <div className={styles.pageFooterActions}>
         <button className={styles.cancelBtn} onClick={() => navigate('/my-patients')}>
-          <ArrowLeft size={15} /> Back to My Patients
+          <ArrowLeft size={15} /> Back
         </button>
 
         <button 
           className={styles.savePrintBtn} 
-          style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
           onClick={handlePrint}
         >
-          <Printer size={16} /> Print Only
-        </button>
-
-        <button 
-          className={styles.savePrintBtn} 
-          onClick={handlePrintAndComplete}
-        >
-          <CheckCircle size={16} /> Print & Complete Visit
+          <Printer size={16} /> Print Prescription
         </button>
       </div>
     </div>

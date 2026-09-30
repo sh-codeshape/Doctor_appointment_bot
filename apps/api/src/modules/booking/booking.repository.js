@@ -48,6 +48,7 @@ function mapBooking(row) {
     patient_uhid: row.patient_uhid !== null && row.patient_uhid !== undefined ? String(row.patient_uhid) : '',
     uhid: row.patient_uhid !== null && row.patient_uhid !== undefined ? String(row.patient_uhid) : '',
     doctor_name: row.doctor_name || '',
+    doctor_qualification: row.doctor_qualification || '',
     doctor_specialization: row.department_name || '',
     consultation_fee: doctorFee,
     doctor_fee: doctorFee,
@@ -59,6 +60,7 @@ function mapBooking(row) {
       _id: row.doctor_id,
       name: row.doctor_name || '',
       department: row.department_name || '',
+      qualification: row.doctor_qualification || '',
       role: 'doctor',
       consultationFee: baseFee,
       oldPatientFee: oldFee,
@@ -98,6 +100,7 @@ const SELECT_BOOKING_WITH_JOINS = sql`
   SELECT
     b.*,
     d.name AS doctor_name,
+    d.qualification AS doctor_qualification,
     d.consultation_fee AS doctor_fee,
     d.old_patient_fee AS doctor_old_patient_fee,
     d.emergency_fee AS doctor_emergency_fee,

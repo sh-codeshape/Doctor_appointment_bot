@@ -23,7 +23,9 @@ export const prescriptionService = {
     const params = new URLSearchParams()
     if (department_id && department_id !== 'all') params.append('department_id', department_id)
     if (search) params.append('search', search)
-    const res = await api.get(`/medicines?${params.toString()}`)
+    const queryString = params.toString()
+    const url = queryString ? `/medicines?${queryString}` : '/medicines'
+    const res = await api.get(url)
     return res.data
   },
 
@@ -74,7 +76,9 @@ export const prescriptionService = {
     const params = new URLSearchParams()
     if (department_id && department_id !== 'all') params.append('department_id', department_id)
     if (search) params.append('search', search)
-    const res = await api.get(`/lab-tests?${params.toString()}`)
+    const queryString = params.toString()
+    const url = queryString ? `/lab-tests?${queryString}` : '/lab-tests'
+    const res = await api.get(url)
     return res.data
   },
 
@@ -137,7 +141,9 @@ export const prescriptionService = {
     const params = new URLSearchParams()
     if (department_id && department_id !== 'all') params.append('department_id', department_id)
     if (search) params.append('search', search)
-    const res = await api.get(`/additional-advice?${params.toString()}`)
+    const queryString = params.toString()
+    const url = queryString ? `/additional-advice?${queryString}` : '/additional-advice'
+    const res = await api.get(url)
     return res.data
   },
   async addAdditionalAdvice(adviceData) {

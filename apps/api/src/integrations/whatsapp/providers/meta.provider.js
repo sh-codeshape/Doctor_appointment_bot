@@ -119,6 +119,7 @@ export class MetaProvider extends IMessagingProvider {
             phone: msg.from,
             type: "text",
             body: msg.text?.body || "",
+            messageId: msg.id,
           };
         }
 
@@ -150,6 +151,7 @@ export class MetaProvider extends IMessagingProvider {
             phone: msg.from,
             type: "text",
             body: reply,
+            messageId: msg.id,
           };
         }
 
@@ -158,6 +160,7 @@ export class MetaProvider extends IMessagingProvider {
             phone: msg.from,
             type: "text",
             body: msg.button?.text || "",
+            messageId: msg.id,
           };
         }
       }
@@ -183,6 +186,29 @@ export class MetaProvider extends IMessagingProvider {
 
     const buffer = await mediaRes.arrayBuffer();
     return { buffer: Buffer.from(buffer), mimeType: mime_type };
+  }
+
+  async markAsRead(messageId) {
+    if (!env.meta.phoneNumberId || !env.meta.accessToken) return;
+    try {
+      await fetch(
+        `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.meta.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            status: "read",
+            message_id: messageId,
+          }),
+        },
+      );
+    } catch (err) {
+      logger.error("Meta markAsRead exception:", err.message);
+    }
   }
 
   handleVerification(req, res) {
