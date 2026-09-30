@@ -25,6 +25,13 @@ export function createWebhookRouter(provider) {
 
       logger.info(`WhatsApp from ${message.phone}: Type ${message.type}`)
 
+      // Acknowledge read receipt if supported by provider
+      if (message.messageId && typeof provider.markAsRead === 'function') {
+        provider.markAsRead(message.messageId).catch(err => {
+          logger.error('Failed to mark message as read:', err.message)
+        })
+      }
+
       // Process asynchronously — respond 200 immediately
       conversationService.handleMessage(message.phone, message).catch((err) => {
         logger.error('Conversation handler error:', err.message)
