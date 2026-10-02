@@ -98,7 +98,7 @@ export default function App() {
         <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><PrescriptionPage /></RequireRole>} />
         <Route path="manual-prescribe" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><ManualPrescriptionPage /></RequireRole>} />
         <Route path="register" element={<RequireRole roles={['superadmin', 'admin', 'receptionist']}><Register /></RequireRole>} />
-        <Route path="staff" element={<RequireRole roles={['superadmin', 'admin']}><Staff /></RequireRole>} />
+        <Route path="staff" element={<RequireRole roles={['superadmin']}><Staff /></RequireRole>} />
         <Route path="reports" element={<RequireRole roles={['superadmin', 'admin']}><Reports /></RequireRole>} />
         <Route path="settings" element={<RequireRole roles={['superadmin']}><Settings /></RequireRole>} />
       </Route>

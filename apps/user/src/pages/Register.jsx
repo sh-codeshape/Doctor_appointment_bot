@@ -280,7 +280,7 @@ export default function Register() {
       const uhidVal = res.patient?.uhid || res.uhid || ''
       toast.success('Registration complete' + (uhidVal ? ' — UHID ' + uhidVal : ''))
     } catch (err) {
-      const errorMsg = err.message || 'Registration failed'
+      const errorMsg = err.response?.data?.message || err.message || 'Registration failed'
       setServerError(errorMsg)
       toast.error(errorMsg)
     } finally {

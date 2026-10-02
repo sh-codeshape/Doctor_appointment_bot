@@ -65,7 +65,7 @@ export default function ManualPrescriptionPage() {
   const [availableRemarks, setAvailableRemarks] = useState([])
   const [availableDosages, setAvailableDosages] = useState([])
 
-  const [customMedName, setCustomMedName] = useState('')
+
   const [customMedDosageForm, setCustomMedDosageForm] = useState('TAB')
   const [customTestName, setCustomTestName] = useState('')
   const [customAdviceName, setCustomAdviceName] = useState('')
@@ -166,9 +166,9 @@ export default function ManualPrescriptionPage() {
   }
 
   const handleAddCustomMedicine = async () => {
-    if (!customMedName.trim()) return
+    if (!medSearch.trim()) return
     const medData = {
-      name: customMedName.trim(),
+      name: medSearch.trim(),
       dosage_form: customMedDosageForm,
       default_dosage: '1-0-1',
       default_frequency: 'Twice daily',
@@ -193,7 +193,7 @@ export default function ManualPrescriptionPage() {
       handleAddMedicine(medData)
     }
     
-    setCustomMedName('')
+    setMedSearch('')
     setCustomMedDosageForm('TAB')
   }
 
@@ -485,17 +485,7 @@ export default function ManualPrescriptionPage() {
             ))}
           </select>
 
-          <div className={styles.searchBox}>
-            <Search size={15} className={styles.searchIcon} />
-            <input
-              className={`${styles.input} ${styles.searchInput}`}
-              placeholder="Search medicine..."
-              value={medSearch}
-              onChange={(e) => setMedSearch(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, flex: 1, minWidth: 250 }}>
             <div className={styles.dropdownWrapper} style={{ width: 80 }}>
               <select
                 className={styles.dropdownSelect}
@@ -515,20 +505,25 @@ export default function ManualPrescriptionPage() {
                 <ChevronDown size={14} />
               </div>
             </div>
-            <input
-              className={styles.input}
-              placeholder="Custom medicine..."
-              style={{ width: 140 }}
-              value={customMedName}
-              onChange={(e) => setCustomMedName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomMedicine()}
-            />
+            
+            <div className={styles.searchBox} style={{ flex: 1 }}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                className={`${styles.input} ${styles.searchInput}`}
+                placeholder="Search or type new medicine..."
+                value={medSearch}
+                onChange={(e) => setMedSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomMedicine()}
+              />
+            </div>
+
             <button
               className={styles.saveBtn}
-              style={{ padding: '8px 12px', fontSize: 13 }}
+              style={{ padding: '8px 12px', fontSize: 13, whiteSpace: 'nowrap' }}
               onClick={handleAddCustomMedicine}
+              disabled={!medSearch.trim()}
             >
-              <Plus size={14} /> Add
+              <Plus size={14} /> Add New
             </button>
           </div>
         </div>
