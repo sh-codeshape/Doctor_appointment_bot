@@ -138,7 +138,7 @@ export class DoctorPrescriptionPrintHandler {
       if (meds.length === 0) return ''
       const bg = isFemale ? '#fce7f3' : '#dbeafe'
       const border = isFemale ? '#f9a8d4' : '#93c5fd'
-      const title = isFemale ? '♀ FEMALE PARTNER MEDICATIONS' : '♂ MALE PARTNER MEDICATIONS'
+      const title = isFemale ? '♀ FEMALE PARTNER MEDICATIONS' : '♂ HUSBAND MEDICATIONS'
       
       let html = `
   <div class="tbl-wrap" style="border-color:${border}; margin-bottom:0;">
@@ -206,7 +206,7 @@ export class DoctorPrescriptionPrintHandler {
       if (tests.length === 0) return ''
       const bg = isFemale ? '#fce7f3' : '#dbeafe'
       const border = isFemale ? '#f9a8d4' : '#93c5fd'
-      const title = isFemale ? '♀ FEMALE TESTS' : '♂ MALE TESTS'
+      const title = isFemale ? '♀ FEMALE TESTS' : '♂ HUSBAND TESTS'
       
       let html = `
   <div class="tbl-wrap" style="border-color:${border}; margin-bottom:0;">
@@ -270,6 +270,9 @@ export class DoctorPrescriptionPrintHandler {
       })
       adviceHTML += `</ul>`
     }
+
+    const totalItems = genMeds.length + femMeds.length + malMeds.length + genTests.length + femTests.length + malTests.length
+    const tblFontSize = totalItems > 15 ? '8.5px' : '9.5px'
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -340,7 +343,7 @@ export class DoctorPrescriptionPrintHandler {
   .tbl-wrap { border: 1px solid #0284c7; border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
   .tbl-header { background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; padding: 4px 8px; display: flex; justify-content: space-between; border-bottom: 1px solid #0284c7; }
   .tbl-sub { font-size: 8.5px; font-weight: 600; color: #0284c7; }
-  table.p-tbl { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  table.p-tbl { width: 100%; border-collapse: collapse; font-size: ${tblFontSize}; }
   table.p-tbl th { background: #f8fafc; color: #0369a1; font-weight: 700; padding: 3px 6px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; text-align: left; }
   table.p-tbl th:last-child { border-right: none; }
   table.p-tbl td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; color: #0f172a; word-wrap: break-word; white-space: pre-wrap; }
@@ -417,7 +420,7 @@ export class DoctorPrescriptionPrintHandler {
   </div>
   ${renderGenMedTable(genMeds)}
   ${(femMeds.length > 0 || malMeds.length > 0) ? `
-  <div style="display: grid; grid-template-columns: ${femMeds.length > 0 && malMeds.length > 0 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
+  <div style="display: grid; grid-template-columns: ${femMeds.length > 0 && malMeds.length > 0 && femMeds.length <= 15 && malMeds.length <= 15 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
     ${renderMedTable(femMeds, true)}
     ${renderMedTable(malMeds, false)}
   </div>
@@ -431,7 +434,7 @@ export class DoctorPrescriptionPrintHandler {
   </div>
   ${renderGenTestTable(genTests)}
   ${(femTests.length > 0 || malTests.length > 0) ? `
-  <div style="display: grid; grid-template-columns: ${femTests.length > 0 && malTests.length > 0 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
+  <div style="display: grid; grid-template-columns: ${femTests.length > 0 && malTests.length > 0 && femTests.length <= 15 && malTests.length <= 15 ? '1fr 1fr' : '1fr'}; gap: 6px; margin-bottom: 8px;">
     ${renderTestTable(femTests, true)}
     ${renderTestTable(malTests, false)}
   </div>
