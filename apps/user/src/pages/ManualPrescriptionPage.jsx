@@ -144,8 +144,8 @@ export default function ManualPrescriptionPage() {
 
   // Handlers for adding medicine
   const handleAddMedicine = (medObj) => {
-    if (selectedMeds.length >= 30) {
-      toast.error('Maximum 30 medicines allowed per slip')
+    if (selectedMeds.length >= 60) {
+      toast.error('Maximum 60 medicines allowed per slip')
       return
     }
     if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase() && m.target === addTarget)) {
@@ -431,7 +431,7 @@ export default function ManualPrescriptionPage() {
       <div className={styles.sectionCard}>
         <div className={styles.sectionHeader} style={{ flexWrap: 'wrap', gap: 8 }}>
           <span className={styles.sectionTitle}>
-            <Pill size={16} color="var(--accent-blue)" /> Prescribe Medicines ({selectedMeds.length}/30)
+            <Pill size={16} color="var(--accent-blue)" /> Prescribe Medicines ({selectedMeds.length}/60)
           </span>
           <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', alignSelf: 'center', marginRight: 4 }}>Adding for:</span>
