@@ -293,8 +293,6 @@ export class DoctorPrescriptionPrintHandler {
     background: #fff;
     margin: 0 auto;
     max-width: 800px;
-    page-break-inside: avoid;
-    break-inside: avoid;
     display: flex;
     flex-direction: column;
     min-height: 97vh;
@@ -347,6 +345,7 @@ export class DoctorPrescriptionPrintHandler {
   table.p-tbl th:last-child { border-right: none; }
   table.p-tbl td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; color: #0f172a; word-wrap: break-word; white-space: pre-wrap; }
   table.p-tbl td:last-child { border-right: none; }
+  table.p-tbl tr { page-break-inside: avoid; break-inside: avoid; }
   .chk { display: inline-block; width: 11px; height: 11px; border: 1.2px solid #0369a1; border-radius: 2px; text-align: center; line-height: 9px; font-size: 8px; font-weight: 800; color: #0369a1; }
   .section-full-header { display: flex; justify-content: space-between; align-items: flex-end; background: #f1f5f9; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 10px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
   /* Signature */
