@@ -144,8 +144,8 @@ export default function ManualPrescriptionPage() {
 
   // Handlers for adding medicine
   const handleAddMedicine = (medObj) => {
-    if (selectedMeds.length >= 21) {
-      toast.error('Maximum 21 medicines allowed per slip')
+    if (selectedMeds.length >= 30) {
+      toast.error('Maximum 30 medicines allowed per slip')
       return
     }
     if (selectedMeds.some((m) => m.name.toLowerCase() === medObj.name.toLowerCase() && m.target === addTarget)) {
@@ -431,7 +431,7 @@ export default function ManualPrescriptionPage() {
       <div className={styles.sectionCard}>
         <div className={styles.sectionHeader} style={{ flexWrap: 'wrap', gap: 8 }}>
           <span className={styles.sectionTitle}>
-            <Pill size={16} color="var(--accent-blue)" /> Prescribe Medicines ({selectedMeds.length}/21)
+            <Pill size={16} color="var(--accent-blue)" /> Prescribe Medicines ({selectedMeds.length}/30)
           </span>
           <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', alignSelf: 'center', marginRight: 4 }}>Adding for:</span>
@@ -530,7 +530,7 @@ export default function ManualPrescriptionPage() {
 
         {/* Quick Add Chips */}
         <div className={styles.chipsRow}>
-          {availableMeds.slice(0, 21).map((m) => (
+          {availableMeds.slice(0, 30).map((m) => (
             <div key={m.id} className={styles.chip} onClick={() => handleAddMedicine(m)}>
               <Plus size={12} /> <span style={{ flex: 1 }}>{m.name}</span>
               <Trash2 size={12} style={{ color: '#ef4444', marginLeft: 6 }} onClick={(e) => handleDeleteCatalogMed(e, m.id)} />
