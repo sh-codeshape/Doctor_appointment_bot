@@ -530,7 +530,7 @@ export default function ManualPrescriptionPage() {
 
         {/* Quick Add Chips */}
         <div className={styles.chipsRow}>
-          {availableMeds.slice(0, 30).map((m) => (
+          {availableMeds.slice(0, 60).map((m) => (
             <div key={m.id} className={styles.chip} onClick={() => handleAddMedicine(m)}>
               <Plus size={12} /> <span style={{ flex: 1 }}>{m.name}</span>
               <Trash2 size={12} style={{ color: '#ef4444', marginLeft: 6 }} onClick={(e) => handleDeleteCatalogMed(e, m.id)} />
