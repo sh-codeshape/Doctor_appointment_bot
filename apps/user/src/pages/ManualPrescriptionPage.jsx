@@ -47,6 +47,8 @@ export default function ManualPrescriptionPage() {
     weight: '',
     spo2: '',
   })
+  const [doctorName, setDoctorName] = useState(user?.name || '')
+  const [doctorQualification, setDoctorQualification] = useState(user?.qualification || user?.specialization || 'OPD')
   const [doctorNotes, setDoctorNotes] = useState('')
   const [selectedMeds, setSelectedMeds] = useState([])
   const [selectedTests, setSelectedTests] = useState([])
@@ -172,7 +174,7 @@ export default function ManualPrescriptionPage() {
       dosage_form: customMedDosageForm,
       default_dosage: '1-0-1',
       default_frequency: 'Twice daily',
-      default_duration: '5 days',
+      default_duration: '30 days',
     }
     
     try {
@@ -325,7 +327,8 @@ export default function ManualPrescriptionPage() {
         ...patientDetails,
         type: 'OPD',
         token_number: 'MANUAL',
-        doctor_name: user?.name || '',
+        doctor_name: doctorName || 'Doctor Name',
+        doctor_qualification: doctorQualification || '',
         date: new Date().toISOString(),
         prescription: {
           vitals,
@@ -401,6 +404,26 @@ export default function ManualPrescriptionPage() {
               value={patientDetails.mobile}
               onChange={(e) => setPatientDetails({ ...patientDetails, mobile: e.target.value })}
               placeholder="Mobile Number"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Doctor Name</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={doctorName}
+              onChange={(e) => setDoctorName(e.target.value)}
+              placeholder="e.g. Dr. John Doe"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Specialization / Qualification</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={doctorQualification}
+              onChange={(e) => setDoctorQualification(e.target.value)}
+              placeholder="e.g. MBBS, MD"
             />
           </div>
         </div>
