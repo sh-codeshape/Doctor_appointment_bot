@@ -1,3 +1,16 @@
+/**
+ * meta.provider.js — Meta WhatsApp Cloud API Provider
+ *
+ * Implements IMessagingProvider for Meta's WhatsApp Cloud API.
+ *
+ * OUTGOING MESSAGE FLOW:
+ *   sendTextMessage()     → enqueueMetaMessage() → meta.queue.js → Meta API
+ *   sendLocationMessage() → enqueueMetaMessage() → meta.queue.js → Meta API
+ *   markAsRead()          → direct fetch()       → Meta API   (bypasses queue intentionally)
+ *
+ * ⚠️  See meta.queue.js for rate limit configuration and critical design notes.
+ */
+
 import { IMessagingProvider } from "../messaging-provider.interface.js";
 import logger from "../../../utils/logger.js";
 import env from "../../../config/env.js";
@@ -130,9 +143,37 @@ export class MetaProvider extends IMessagingProvider {
     return { buffer: Buffer.from(buffer), mimeType: mime_type };
   }
 
+  // ⚠️  CRITICAL — markAsRead MUST stay as a direct fetch(), NOT enqueueMetaMessage().
+  //
+  //  WHY: Read receipts (marking a message as 'read') bypass the rate-limited queue
+  //  intentionally. Routing them through the queue wastes job slots that are meant
+  //  for actual patient-facing messages and can cause real messages to be delayed.
+  //
+  //  Read receipts are fire-and-forget — Meta does not retry them and patients
+  //  are not affected if one occasionally fails. They are low-priority.
+  //
+  //  If you are tempted to change this to: await enqueueMetaMessage({ type: 'read', ... })
+  //  → DON’T. That was a bug we fixed. See git history for context.
   async markAsRead(messageId) {
     if (!env.meta.phoneNumberId || !env.meta.accessToken) return;
-    await enqueueMetaMessage({ messageId, type: 'read' });
+    // markAsRead is fire-and-forget — bypass the rate-limited queue
+    // so it doesn't consume slots meant for actual patient messages
+    fetch(
+      `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.meta.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          status: "read",
+          message_id: messageId,
+        }),
+      }
+    ).catch((err) => logger.warn(`markAsRead failed (non-critical): ${err.message}`));
+    // intentionally NOT awaited — we never want this to block a message
   }
 
   handleVerification(req, res) {

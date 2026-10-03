@@ -29,15 +29,22 @@ const allowedOrigins = Array.from(new Set([...defaultAllowed, ...envAllowed]));
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, mobile apps)
+      if (!origin) return callback(null, true);
+
       if (
-        !origin ||
         allowedOrigins.includes(origin) ||
-        origin.endsWith("kgnandahospital.com")
+        origin.endsWith(".kgnandahospital.com")
       ) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive fallback to prevent CORS blocks during testing
+        return callback(null, true);
       }
+
+      // In dev: allow everything so localhost variants don't block you
+      if (env.isDev) return callback(null, true);
+
+      // In production: block unknown origins
+      logger.warn(`CORS blocked origin: ${origin}`);
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

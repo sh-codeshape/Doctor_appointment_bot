@@ -1,3 +1,21 @@
+/**
+ * whatsapp.webhook.js — Incoming WhatsApp Webhook Router
+ *
+ * RULES (do not break these):
+ *   1. Always respond 200 OK to Meta — even on errors.
+ *      If Meta gets anything other than 200, it retries the webhook endlessly
+ *      and eventually disables your webhook entirely.
+ *
+ *   2. Status updates (delivered, read, failed) are handled BEFORE message parsing.
+ *      They return 200 immediately. Meta sends a LOT of these — they must be fast.
+ *
+ *   3. The 130429 async rate limit handler requeues the failed message via BullMQ
+ *      with a 15s delay and tracks retryCount to prevent infinite loops (max 4 retries).
+ *
+ *   4. Conversation processing runs asynchronously (fire-and-forget) so the 200
+ *      is sent to Meta before any DB or AI work begins.
+ */
+
 import { Router } from "express";
 import conversationService from "../../modules/conversation/conversation.service.js";
 import logger from "../../utils/logger.js";

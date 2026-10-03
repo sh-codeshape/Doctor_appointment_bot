@@ -1,10 +1,37 @@
+/**
+ * meta.queue.js — Outgoing WhatsApp Message Queue
+ *
+ * PURPOSE:
+ *   All outgoing messages to Meta's WhatsApp API are sent through this
+ *   BullMQ queue to prevent rate limit errors (Error 130429).
+ *   The queue enforces a global MPS (Messages Per Second) limit.
+ *
+ * RATE LIMIT CONTROL:
+ *   Set META_MAX_MPS in your .env file.
+ *   Default: 20 MPS. Meta's warm-up period may require as low as 1-2 MPS.
+ *   Once your phone number quality rating is High, you can increase this.
+ *
+ * ⚠️  CRITICAL — DO NOT ADD 'read' TYPE HERE:
+ *   markAsRead (read receipts) must NOT go through this queue.
+ *   They are handled directly in meta.provider.js via a fire-and-forget fetch().
+ *   Reason: read receipts do NOT consume your MPS quota the same way messages do,
+ *   and routing them through the queue wastes slots needed for real patient messages.
+ *   This queue only handles: 'text' and 'location' types.
+ *
+ * REDIS:
+ *   Uses a separate ioredis connection from the main cache connection.
+ *   BullMQ requires maxRetriesPerRequest: null on its connection.
+ */
+
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import env from '../../../config/env.js';
 import logger from '../../../utils/logger.js';
 import { cache } from '../../../config/redis.js';
 
-// Dedicated connection for BullMQ (needs maxRetriesPerRequest: null)
+// Dedicated Redis connection for BullMQ.
+// ⚠️  DO NOT reuse the main redis connection from config/redis.js here.
+// BullMQ requires maxRetriesPerRequest: null or it will throw on blocking commands.
 const connection = new Redis(env.redisUrl, {
   maxRetriesPerRequest: null,
 });
@@ -18,8 +45,9 @@ const META_MAX_MPS = parseInt(process.env.META_MAX_MPS, 10) || 20;
 const worker = new Worker('meta-whatsapp-queue', async (job) => {
   const { to, body, type, location } = job.data;
 
-  // We perform the actual fetch here
-  let payload = {};
+  // ⚠️  CRITICAL: Only 'text' and 'location' are valid job types.
+  // 'read' (markAsRead) is intentionally NOT handled here — see file-level comment above.
+  // If you add a new type here, also update enqueueMetaMessage() callers.
   if (type === 'text') {
     payload = {
       messaging_product: 'whatsapp',
@@ -34,12 +62,11 @@ const worker = new Worker('meta-whatsapp-queue', async (job) => {
       type: 'location',
       location,
     };
-  } else if (type === 'read') {
-    payload = {
-      messaging_product: "whatsapp",
-      status: "read",
-      message_id: job.data.messageId,
-    };
+  } else {
+    // Unknown type received — this should never happen in normal flow.
+    // If you're seeing this warning, check the caller is only passing 'text' or 'location'.
+    logger.warn(`meta.queue: Unknown job type "${type}", skipping.`);
+    return;
   }
 
   const response = await fetch(
@@ -58,37 +85,51 @@ const worker = new Worker('meta-whatsapp-queue', async (job) => {
 
   if (!response.ok) {
     logger.error(`Meta queue send error: ${JSON.stringify(result)}`);
-    // If it's a rate limit error (synchronous), throw error so BullMQ retries with backoff
+    // If it's a synchronous rate limit, throw so BullMQ retries with backoff
     if (result?.error?.code === 130429) {
       throw new Error(`RATE_LIMIT_130429`);
     }
-    // Other errors
-    throw new Error(`Failed to send WhatsApp message via Meta: ${JSON.stringify(result)}`);
+    throw new Error(`Failed to send WhatsApp message: ${JSON.stringify(result)}`);
   }
 
-  // Success! We get a messageId back for texts/locations (read receipts don't return messages array)
-  if (type !== 'read') {
-    const messageId = result.messages?.[0]?.id;
-    if (messageId) {
-      // Map messageId -> original payload in cache for 24 hours
-      // If webhook later gets a 130429, we can pull the payload and retry it
-      await cache.set(`msg_payload:${messageId}`, job.data, 86400);
-    }
-    logger.debug(`Meta queue message sent to ${to}`);
+  // Cache messageId -> original payload for 24h so webhook can requeue on async 130429
+  const messageId = result.messages?.[0]?.id;
+  if (messageId) {
+    await cache.set(`msg_payload:${messageId}`, job.data, 86400);
   }
+  logger.debug(`Meta queue message sent to ${to}`);
 
   return result;
-}, { 
+}, {
   connection,
+  concurrency: 1, // ⚠️  DO NOT increase — concurrency > 1 allows burst firing which triggers Meta 130429
   limiter: {
-    max: META_MAX_MPS,
-    duration: 1000 // Per 1 second
-  }
+    max: META_MAX_MPS, // Change via META_MAX_MPS env var. Do NOT hardcode.
+    duration: 1000,   // Per second window
+  },
 });
 
 worker.on('failed', (job, err) => {
-  logger.error(`Queue Job ${job?.id} failed: ${err.message}`);
+  logger.error(`Queue Job ${job?.id} failed after all retries: ${err.message}`);
 });
+
+// Worker-level error (not job failure, but the worker itself crashing)
+worker.on('error', (err) => {
+  logger.error(`BullMQ Worker error: ${err.message}`);
+});
+
+// Graceful shutdown — lets the current in-flight job finish before the process exits.
+// Without this, a job being processed mid-send gets orphaned and can be sent twice on restart.
+const shutdown = async (signal) => {
+  logger.warn(`${signal} received — closing BullMQ worker and queue gracefully...`);
+  await worker.close();   // Wait for current job to finish, then stop
+  await metaQueue.close(); // Close queue connection
+  logger.info('BullMQ shut down cleanly.');
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 /**
  * Pushes a message to the outgoing queue with exponential backoff configuration.

@@ -1,3 +1,18 @@
+/**
+ * redis.js — Redis connection and cache helper
+ *
+ * Exports:
+ *   - default export: the raw ioredis client (for low-level use)
+ *   - cache: a simple get/set/del/wrap helper with JSON serialization
+ *
+ * ⚠️  DO NOT use this connection in BullMQ.
+ *   BullMQ requires a separate ioredis instance with maxRetriesPerRequest: null.
+ *   That dedicated connection lives in meta.queue.js.
+ *
+ * cache.invalidate() uses SCAN (not KEYS) intentionally — KEYS is O(N)
+ * and blocks the Redis event loop on large keyspaces.
+ */
+
 import Redis from 'ioredis'
 import env from './env.js'
 import logger from '../utils/logger.js'
@@ -33,10 +48,16 @@ export const cache = {
     await redis.del(key)
   },
 
-  /** Delete all keys matching a pattern, e.g. 'doctors:*' */
+  /** Delete all keys matching a pattern, e.g. 'doctors:*'
+   *  Uses SCAN instead of KEYS to avoid blocking Redis on large keyspaces.
+   */
   async invalidate(pattern) {
-    const keys = await redis.keys(pattern)
-    if (keys.length > 0) await redis.del(...keys)
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = nextCursor;
+      if (keys.length > 0) await redis.del(...keys);
+    } while (cursor !== '0');
   },
 
   /**
