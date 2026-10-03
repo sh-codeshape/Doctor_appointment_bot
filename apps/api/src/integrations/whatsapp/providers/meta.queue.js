@@ -48,6 +48,7 @@ const worker = new Worker('meta-whatsapp-queue', async (job) => {
   // ⚠️  CRITICAL: Only 'text' and 'location' are valid job types.
   // 'read' (markAsRead) is intentionally NOT handled here — see file-level comment above.
   // If you add a new type here, also update enqueueMetaMessage() callers.
+  let payload = {};
   if (type === 'text') {
     payload = {
       messaging_product: 'whatsapp',
