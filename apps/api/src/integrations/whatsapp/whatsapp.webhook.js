@@ -83,9 +83,15 @@ export function createWebhookRouter(provider) {
 
       // Acknowledge read receipt if supported by provider
       if (message.messageId && typeof provider.markAsRead === "function") {
-        provider.markAsRead(message.messageId).catch((err) => {
-          logger.error("Failed to mark message as read:", err.message);
-        });
+        // DELAY BY 2 SECONDS:
+        // We delay this so it doesn't collide with the bot's instant text reply.
+        // If they fire at the same time, Meta sees 2 API calls in the same millisecond
+        // and throws a 130429 Rate Limit error on newly verified accounts.
+        setTimeout(() => {
+          provider.markAsRead(message.messageId).catch((err) => {
+            logger.error("Failed to mark message as read:", err.message);
+          });
+        }, 2000);
       }
 
       // Process asynchronously — respond 200 immediately
