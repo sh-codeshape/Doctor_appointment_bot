@@ -7,6 +7,7 @@ import Card from '../components/common/Card'
 import { Loader } from '../components/common/Loader'
 import { bookingService } from '../services/bookingService'
 import { prescriptionService } from '../services/prescriptionService'
+import { doctorService } from '../services/doctorService'
 import { printService } from '../services/printService'
 import { DoctorPrescriptionPrintHandler } from '../services/DoctorPrescriptionPrintHandler'
 import { mockDepartments } from '../data/mockData'
@@ -47,8 +48,8 @@ export default function ManualPrescriptionPage() {
     weight: '',
     spo2: '',
   })
-  const [doctorName, setDoctorName] = useState(user?.name || '')
-  const [doctorQualification, setDoctorQualification] = useState(user?.qualification || user?.specialization || 'OPD')
+  const [doctors, setDoctors] = useState([])
+  const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [doctorNotes, setDoctorNotes] = useState('')
   const [selectedMeds, setSelectedMeds] = useState([])
   const [selectedTests, setSelectedTests] = useState([])
@@ -82,12 +83,13 @@ export default function ManualPrescriptionPage() {
         const deptId = deptFilter === 'all' ? null : deptFilter
         const catalogParams = { department_id: deptId, search: '' }
 
-        const [medsRes, testsRes, adviceRes, remarksRes, dosagesRes] = await Promise.all([
+        const [medsRes, testsRes, adviceRes, remarksRes, dosagesRes, docsRes] = await Promise.all([
           prescriptionService.getMedicines(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getLabTests(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getAdditionalAdvice(catalogParams).catch(() => ({ data: [] })),
           prescriptionService.getMedicineRemarks().catch(() => ({ data: [] })),
           prescriptionService.getMedicineDosages().catch(() => ({ data: [] })),
+          doctorService.getDoctors().catch(() => []),
         ])
 
         if (!active) return
@@ -97,6 +99,15 @@ export default function ManualPrescriptionPage() {
         setAvailableAdvice(adviceRes.data || [])
         setAvailableRemarks(remarksRes.data || [])
         setAvailableDosages(dosagesRes.data || [])
+        
+        const docsList = Array.isArray(docsRes) ? docsRes : (docsRes.data || [])
+        setDoctors(docsList)
+        
+        // Auto-select logged-in user if they are a doctor
+        if (user?.role === 'doctor') {
+          const me = docsList.find(d => String(d.id || d._id) === String(user.doctor_id || user.doctorId || user.id))
+          if (me) setSelectedDoctorId(String(me.id || me._id))
+        }
       } catch (err) {
         toast.error('Failed to load catalog data')
       } finally {
@@ -322,13 +333,15 @@ export default function ManualPrescriptionPage() {
 
       // Removed auto-add catalog items logic to prevent api error toasts during print.
 
+      const selectedDoc = doctors.find(d => String(d.id || d._id) === String(selectedDoctorId))
+
       // 2. Prepare full slip data object for doctor prescription rendering
       const slipData = {
         ...patientDetails,
         type: 'OPD',
         token_number: 'MANUAL',
-        doctor_name: doctorName || 'Doctor Name',
-        doctor_qualification: doctorQualification || '',
+        doctor_name: selectedDoc ? selectedDoc.name : (user?.name || 'General Doctor'),
+        doctor_qualification: selectedDoc ? (selectedDoc.qualification || selectedDoc.specialization || selectedDoc.department || '') : '',
         date: new Date().toISOString(),
         prescription: {
           vitals,
@@ -407,24 +420,19 @@ export default function ManualPrescriptionPage() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Doctor Name</label>
-            <input
-              type="text"
-              className={styles.input}
-              value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
-              placeholder="e.g. Dr. John Doe"
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Specialization / Qualification</label>
-            <input
-              type="text"
-              className={styles.input}
-              value={doctorQualification}
-              onChange={(e) => setDoctorQualification(e.target.value)}
-              placeholder="e.g. MBBS, MD"
-            />
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Doctor</label>
+            <select
+              className={styles.select}
+              value={selectedDoctorId}
+              onChange={(e) => setSelectedDoctorId(e.target.value)}
+            >
+              <option value="">-- Select Doctor --</option>
+              {doctors.map(doc => (
+                <option key={doc.id || doc._id} value={doc.id || doc._id}>
+                  {doc.name} {doc.qualification ? `— ${doc.qualification}` : (doc.specialization ? `— ${doc.specialization}` : '')}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </Card>
