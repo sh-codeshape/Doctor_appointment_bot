@@ -67,6 +67,7 @@ services:
       - postgres
       - redis
     restart: unless-stopped
+    stop_grace_period: 15s   # Give BullMQ worker max 15s to finish in-flight job, then force kill
 
 volumes:
   docbot-postgres-data:

@@ -122,8 +122,18 @@ worker.on('error', (err) => {
 // Without this, a job being processed mid-send gets orphaned and can be sent twice on restart.
 const shutdown = async (signal) => {
   logger.warn(`${signal} received — closing BullMQ worker and queue gracefully...`);
-  await worker.close();   // Wait for current job to finish, then stop
+
+  // Hard timeout: if shutdown takes longer than 10s, force exit.
+  // docker-compose stop_grace_period is 15s, so this always wins cleanly.
+  const forceExit = setTimeout(() => {
+    logger.warn('Shutdown timeout reached — forcing exit.');
+    process.exit(0);
+  }, 10_000);
+  forceExit.unref(); // Don't let this timer keep the process alive on its own
+
+  await worker.close();    // Wait for current job to finish, then stop
   await metaQueue.close(); // Close queue connection
+  clearTimeout(forceExit);
   logger.info('BullMQ shut down cleanly.');
   process.exit(0);
 };
