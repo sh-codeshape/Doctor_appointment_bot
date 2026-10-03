@@ -1,6 +1,7 @@
 import { IMessagingProvider } from "../messaging-provider.interface.js";
 import logger from "../../../utils/logger.js";
 import env from "../../../config/env.js";
+import { enqueueMetaMessage } from "./meta.queue.js";
 
 /**
  * Meta WhatsApp Cloud API provider.
@@ -30,34 +31,7 @@ export class MetaProvider extends IMessagingProvider {
       return;
     }
 
-    try {
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.meta.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to,
-            type: "text",
-            text: { body: stringBody },
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        logger.error(`Meta send error: ${JSON.stringify(errorData)}`);
-        throw new Error("Failed to send WhatsApp message via Meta");
-      }
-
-      logger.debug(`Meta message sent to ${to}`);
-    } catch (err) {
-      logger.error("Meta send exception:", err.message);
-    }
+    await enqueueMetaMessage({ to, body: stringBody, type: 'text' });
   }
 
   async sendLocationMessage(to, body) {
@@ -66,39 +40,7 @@ export class MetaProvider extends IMessagingProvider {
       return;
     }
 
-    try {
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.meta.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to,
-            type: "location",
-            location: {
-              latitude: body.latitude,
-              longitude: body.longitude,
-              name: body.name,
-              address: body.address,
-            },
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        logger.error(`Meta location send error: ${JSON.stringify(errorData)}`);
-        throw new Error("Failed to send WhatsApp location via Meta");
-      }
-
-      logger.debug(`Meta location sent to ${to}`);
-    } catch (err) {
-      logger.error("Meta location send exception:", err.message);
-    }
+    await enqueueMetaMessage({ to, location: body, type: 'location' });
   }
 
   parseIncomingMessage(req) {
@@ -190,25 +132,7 @@ export class MetaProvider extends IMessagingProvider {
 
   async markAsRead(messageId) {
     if (!env.meta.phoneNumberId || !env.meta.accessToken) return;
-    try {
-      await fetch(
-        `https://graph.facebook.com/v18.0/${env.meta.phoneNumberId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.meta.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            status: "read",
-            message_id: messageId,
-          }),
-        },
-      );
-    } catch (err) {
-      logger.error("Meta markAsRead exception:", err.message);
-    }
+    await enqueueMetaMessage({ messageId, type: 'read' });
   }
 
   handleVerification(req, res) {

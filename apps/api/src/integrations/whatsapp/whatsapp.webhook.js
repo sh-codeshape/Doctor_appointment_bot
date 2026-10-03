@@ -1,6 +1,8 @@
 import { Router } from "express";
 import conversationService from "../../modules/conversation/conversation.service.js";
 import logger from "../../utils/logger.js";
+import { cache } from "../../config/redis.js";
+import { enqueueMetaMessage } from "./providers/meta.queue.js";
 
 /**
  * Creates the WhatsApp webhook router.
@@ -20,11 +22,43 @@ export function createWebhookRouter(provider) {
       console.log(`\n--- INCOMING WEBHOOK PAYLOAD ---`)
       console.log(JSON.stringify(req.body, null, 2))
       console.log(`--------------------------------\n`)
+      // Handle status updates (e.g. rate limit failures)
+      const isStatusUpdate = req.body?.entry?.[0]?.changes?.[0]?.value?.statuses;
+      if (isStatusUpdate) {
+        const statusObj = req.body.entry[0].changes[0].value.statuses[0];
+        
+        // If it's a 130429 rate limit failure, requeue it
+        if (statusObj.status === "failed" && statusObj.errors?.[0]?.code === 130429) {
+          const failedMessageId = statusObj.id;
+          logger.warn(`Asynchronous Rate Limit hit for message ${failedMessageId}. Attempting to requeue...`);
+          
+          const payload = await cache.get(`msg_payload:${failedMessageId}`);
+          if (payload) {
+            payload.retryCount = (payload.retryCount || 0) + 1;
+            
+            if (payload.retryCount <= 4) {
+              // Requeue with a 15-second delay. BullMQ will handle it gracefully.
+              await enqueueMetaMessage(payload, 15000);
+              logger.info(`Message ${failedMessageId} successfully requeued for retry (attempt ${payload.retryCount}).`);
+            } else {
+              logger.error(`Message ${failedMessageId} failed asynchronously 5 times. Dropping.`);
+            }
+            
+            // Delete from cache so we don't requeue it indefinitely if something goes wrong
+            await cache.del(`msg_payload:${failedMessageId}`);
+          } else {
+            logger.error(`Could not requeue message ${failedMessageId}: Payload not found in Redis cache.`);
+          }
+        }
+        
+        return res.status(200).send("OK");
+      }
+
       const message = provider.parseIncomingMessage(req);
 
       if (!message) {
-        console.log(`Payload ignored by parser (likely a status update or unsupported type).`)
-        return res.status(200).send("OK"); // Acknowledge but ignore (status updates, etc.)
+        console.log(`Payload ignored by parser (likely a status update or unsupported type).`);
+        return res.status(200).send("OK");
       }
 
       logger.info(`WhatsApp from ${message.phone}: Type ${message.type}`);
