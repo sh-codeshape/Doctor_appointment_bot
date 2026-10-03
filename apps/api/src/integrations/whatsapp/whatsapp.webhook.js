@@ -55,8 +55,8 @@ export function createWebhookRouter(provider) {
             payload.retryCount = (payload.retryCount || 0) + 1;
             
             if (payload.retryCount <= 4) {
-              // Requeue with a 15-second delay. BullMQ will handle it gracefully.
-              await enqueueMetaMessage(payload, 15000);
+              // Requeue with a 30-second delay to give Meta's rate limit window time to reset.
+              await enqueueMetaMessage(payload, 30000);
               logger.info(`Message ${failedMessageId} successfully requeued for retry (attempt ${payload.retryCount}).`);
             } else {
               logger.error(`Message ${failedMessageId} failed asynchronously 5 times. Dropping.`);

@@ -38,8 +38,9 @@ const connection = new Redis(env.redisUrl, {
 
 export const metaQueue = new Queue('meta-whatsapp-queue', { connection });
 
-// Configure max Messages Per Second
-const META_MAX_MPS = parseInt(process.env.META_MAX_MPS, 10) || 20;
+// Configure max Messages Per Second.
+// Defaulting to 1 for warm-up phase (prevents burst sending that triggers 130429)
+const META_MAX_MPS = parseInt(process.env.META_MAX_MPS, 10) || 1;
 
 // Rate limiter applies globally to all workers connected to this queue
 const worker = new Worker('meta-whatsapp-queue', async (job) => {
