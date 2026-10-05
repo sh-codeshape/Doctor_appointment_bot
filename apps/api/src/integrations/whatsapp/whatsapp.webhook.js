@@ -88,7 +88,7 @@ export function createWebhookRouter(provider) {
           return res.status(200).send("OK");
         }
         // Save for 24 hours (86400 seconds)
-        await cache.set(idempotencyKey, "1", "EX", 86400);
+        await cache.set(idempotencyKey, "1", 86400);
       }
 
       logger.info(`WhatsApp from ${message.phone}: Type ${message.type}`);
