@@ -187,7 +187,7 @@ export default function PrescriptionPage() {
       dosage_form: customMedDosageForm,
       default_dosage: '1-0-1',
       default_frequency: 'Twice daily',
-      default_duration: '5 days',
+      default_duration: '30 days',
     }
     
     try {
@@ -348,7 +348,13 @@ export default function PrescriptionPage() {
             }
             return isNew(med.id)
               ? prescriptionService.addMedicine(data)
-              : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage, dosage_form: med.dosage_form })
+              : prescriptionService.updateMedicine(med.id, { 
+                  remarks: med.remarks, 
+                  default_dosage: med.dosage, 
+                  default_frequency: med.frequency, 
+                  default_duration: med.duration, 
+                  dosage_form: med.dosage_form 
+                })
           }),
           ...selectedTests.map((test) => {
             const data = { department_id: targetDeptId, name: test.name }
