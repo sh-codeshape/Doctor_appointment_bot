@@ -79,6 +79,18 @@ export function createWebhookRouter(provider) {
         return res.status(200).send("OK");
       }
 
+      // Idempotency Check: Prevent duplicate webhook processing
+      if (message.messageId) {
+        const idempotencyKey = `processed_msg:${message.messageId}`;
+        const isDuplicate = await cache.get(idempotencyKey);
+        if (isDuplicate) {
+          logger.warn(`Idempotency hit: Ignoring duplicate webhook for message ${message.messageId}`);
+          return res.status(200).send("OK");
+        }
+        // Save for 24 hours (86400 seconds)
+        await cache.set(idempotencyKey, "1", "EX", 86400);
+      }
+
       logger.info(`WhatsApp from ${message.phone}: Type ${message.type}`);
 
       // Acknowledge read receipt if supported by provider
