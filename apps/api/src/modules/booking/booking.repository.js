@@ -436,6 +436,30 @@ class BookingRepository {
     return this.findById(row.id)
   }
 
+  async updateDraft(id, draftPayload) {
+    const [existing] = await sql`SELECT meta FROM bookings WHERE id = ${id}`
+    if (!existing) return null
+
+    const currentMeta = existing.meta || {}
+    const newMeta = {
+      ...currentMeta,
+      draft: {
+        ...(currentMeta.draft || {}),
+        ...draftPayload,
+        updated_at: new Date().toISOString(),
+      },
+    }
+
+    const [row] = await sql`
+      UPDATE bookings
+      SET meta = ${sql.json(newMeta)}, updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id
+    `
+    if (!row) return null
+    return this.findById(row.id)
+  }
+
   async delete(id) {
     const booking = await this.findById(id)
     if (!booking) return null

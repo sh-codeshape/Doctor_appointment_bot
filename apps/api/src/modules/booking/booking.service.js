@@ -159,6 +159,35 @@ class BookingService {
     return updated;
   }
 
+  async saveDraft(id, draftPayload) {
+    const booking = await bookingRepo.findById(id);
+    if (!booking) throw new AppError("Booking not found", 404);
+
+    // Save to Redis (24h TTL)
+    const redisKey = `draft:${id}`;
+    await cache.set(redisKey, draftPayload, 86400); // 24 hours in seconds
+
+    // Save to DB
+    const updated = await bookingRepo.updateDraft(id, draftPayload);
+    return updated;
+  }
+
+  async getDraft(id) {
+    const redisKey = `draft:${id}`;
+    const cachedDraft = await cache.get(redisKey);
+    if (cachedDraft) {
+      return cachedDraft;
+    }
+
+    // Fallback to DB
+    const booking = await bookingRepo.findById(id);
+    if (booking && booking.meta && booking.meta.draft) {
+      return booking.meta.draft;
+    }
+    
+    return null;
+  }
+
   async deleteBooking(id) {
     const booking = await bookingRepo.findById(id);
     if (booking?.slotId) {

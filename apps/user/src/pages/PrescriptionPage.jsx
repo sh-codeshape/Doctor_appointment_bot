@@ -10,6 +10,7 @@ import { prescriptionService } from '../services/prescriptionService'
 import { printService } from '../services/printService'
 import { DoctorPrescriptionPrintHandler } from '../services/DoctorPrescriptionPrintHandler'
 import { mockDepartments } from '../data/mockData'
+import api from '../services/api'
 import toast from 'react-hot-toast'
 import styles from './PrescriptionPage.module.css'
 
@@ -97,8 +98,21 @@ export default function PrescriptionPage() {
         setAvailableDosages(dosagesRes.data || [])
 
         const rx = enriched.prescription || enriched.meta?.prescription || {}
+        
+        let draftVitals = null;
+        let draftNotes = null;
+        try {
+          const { data: draftRes } = await api.get(`/bookings/${bookingId}/draft`)
+          if (draftRes.success && draftRes.draft) {
+            draftVitals = draftRes.draft.vitals;
+            draftNotes = draftRes.draft.doctor_notes;
+          }
+        } catch (e) {
+          console.error("Failed to load draft", e)
+        }
+
         setVitals(
-          rx.vitals || {
+          draftVitals || rx.vitals || {
             bp: '',
             pulse: '',
             temp: '',
@@ -106,7 +120,7 @@ export default function PrescriptionPage() {
             spo2: '',
           }
         )
-        setDoctorNotes(rx.doctor_notes || '')
+        setDoctorNotes(draftNotes || rx.doctor_notes || '')
         setSelectedMeds(rx.medicines || [])
         setSelectedTests(rx.tests || [])
         setSelectedAdvice(rx.additional_advice || rx.advice || [])

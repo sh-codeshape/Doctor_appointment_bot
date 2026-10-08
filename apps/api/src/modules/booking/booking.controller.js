@@ -56,6 +56,20 @@ export const bookingController = {
     } catch (err) { next(err) }
   },
 
+  async getDraft(req, res, next) {
+    try {
+      const draft = await bookingService.getDraft(req.params.id)
+      res.json({ success: true, draft })
+    } catch (err) { next(err) }
+  },
+
+  async saveDraft(req, res, next) {
+    try {
+      const booking = await bookingService.saveDraft(req.params.id, req.body)
+      res.json({ success: true, booking })
+    } catch (err) { next(err) }
+  },
+
   async delete(req, res, next) {
     try {
       await bookingService.deleteBooking(req.params.id)
