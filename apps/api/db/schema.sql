@@ -323,7 +323,8 @@ CREATE TYPE public.user_role_enum AS ENUM (
     'admin',
     'doctor',
     'receptionist',
-    'pharmacy'
+    'pharmacy',
+    'assistant_doctor'
 );
 
 
@@ -4366,6 +4367,40 @@ CREATE TABLE auth.webauthn_credentials (
 
 
 --
+-- Name: additional_advice; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.additional_advice (
+    id integer NOT NULL,
+    department_id integer,
+    advice text NOT NULL,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: additional_advice_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.additional_advice_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: additional_advice_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.additional_advice_id_seq OWNED BY public.additional_advice.id;
+
+
+--
 -- Name: bookings; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4391,8 +4426,9 @@ CREATE TABLE public.bookings (
     meta jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    is_emergency boolean DEFAULT false NOT NULL,
-    fee_charged integer DEFAULT 0 NOT NULL
+    doctor_fee integer DEFAULT 0 NOT NULL,
+    doctor_old_patient_fee integer DEFAULT 0 NOT NULL,
+    doctor_emergency_fee integer DEFAULT 0 NOT NULL
 );
 
 
@@ -4538,7 +4574,7 @@ ALTER TABLE public.doctors ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 --
 
 CREATE TABLE public.lab_tests (
-    id bigint NOT NULL,
+    id integer NOT NULL,
     department_id bigint,
     name text NOT NULL,
     category text DEFAULT 'General'::text,
@@ -4559,6 +4595,37 @@ ALTER TABLE public.lab_tests ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- Name: medicine_dosages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.medicine_dosages (
+    id integer NOT NULL,
+    dosage text NOT NULL,
+    is_active boolean DEFAULT true
+);
+
+
+--
+-- Name: medicine_dosages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.medicine_dosages_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: medicine_dosages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.medicine_dosages_id_seq OWNED BY public.medicine_dosages.id;
 
 
 --
@@ -4596,11 +4663,42 @@ ALTER TABLE public.medicine_orders ALTER COLUMN id ADD GENERATED ALWAYS AS IDENT
 
 
 --
+-- Name: medicine_remarks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.medicine_remarks (
+    id integer NOT NULL,
+    remark text NOT NULL,
+    is_active boolean DEFAULT true
+);
+
+
+--
+-- Name: medicine_remarks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.medicine_remarks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: medicine_remarks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.medicine_remarks_id_seq OWNED BY public.medicine_remarks.id;
+
+
+--
 -- Name: medicines; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.medicines (
-    id bigint NOT NULL,
+    id integer NOT NULL,
     department_id bigint,
     name text NOT NULL,
     dosage_form text DEFAULT 'Tab'::text,
@@ -4608,7 +4706,9 @@ CREATE TABLE public.medicines (
     default_frequency text DEFAULT ''::text,
     default_duration text DEFAULT ''::text,
     is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    remark_id integer,
+    dosage_id integer
 );
 
 
@@ -5052,6 +5152,27 @@ ALTER TABLE ONLY auth.refresh_tokens ALTER COLUMN id SET DEFAULT nextval('auth.r
 
 
 --
+-- Name: additional_advice id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.additional_advice ALTER COLUMN id SET DEFAULT nextval('public.additional_advice_id_seq'::regclass);
+
+
+--
+-- Name: medicine_dosages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicine_dosages ALTER COLUMN id SET DEFAULT nextval('public.medicine_dosages_id_seq'::regclass);
+
+
+--
+-- Name: medicine_remarks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicine_remarks ALTER COLUMN id SET DEFAULT nextval('public.medicine_remarks_id_seq'::regclass);
+
+
+--
 -- Name: mfa_amr_claims amr_id_pk; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
@@ -5364,6 +5485,14 @@ ALTER TABLE ONLY auth.webauthn_credentials
 
 
 --
+-- Name: additional_advice additional_advice_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.additional_advice
+    ADD CONSTRAINT additional_advice_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: bookings bookings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5420,11 +5549,35 @@ ALTER TABLE ONLY public.lab_tests
 
 
 --
+-- Name: medicine_dosages medicine_dosages_dosage_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicine_dosages
+    ADD CONSTRAINT medicine_dosages_dosage_key UNIQUE (dosage);
+
+
+--
+-- Name: medicine_dosages medicine_dosages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicine_dosages
+    ADD CONSTRAINT medicine_dosages_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: medicine_orders medicine_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.medicine_orders
     ADD CONSTRAINT medicine_orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: medicine_remarks medicine_remarks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicine_remarks
+    ADD CONSTRAINT medicine_remarks_pkey PRIMARY KEY (id);
 
 
 --
@@ -6229,20 +6382,6 @@ CREATE INDEX idx_bookings_doctor_status ON public.bookings USING btree (doctor_i
 
 
 --
--- Name: idx_bookings_fee_charged; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_bookings_fee_charged ON public.bookings USING btree (fee_charged);
-
-
---
--- Name: idx_bookings_is_emergency; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_bookings_is_emergency ON public.bookings USING btree (is_emergency);
-
-
---
 -- Name: idx_bookings_patient; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6254,13 +6393,6 @@ CREATE INDEX idx_bookings_patient ON public.bookings USING btree (patient_id, ap
 --
 
 CREATE INDEX idx_bookings_status ON public.bookings USING btree (status, created_at DESC);
-
-
---
--- Name: idx_bookings_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_bookings_type ON public.bookings USING btree (type);
 
 
 --
@@ -6785,6 +6917,14 @@ ALTER TABLE ONLY auth.webauthn_credentials
 
 
 --
+-- Name: additional_advice additional_advice_department_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.additional_advice
+    ADD CONSTRAINT additional_advice_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id) ON DELETE SET NULL;
+
+
+--
 -- Name: bookings bookings_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6894,6 +7034,22 @@ ALTER TABLE ONLY public.medicine_orders
 
 ALTER TABLE ONLY public.medicines
     ADD CONSTRAINT medicines_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id) ON DELETE SET NULL;
+
+
+--
+-- Name: medicines medicines_dosage_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicines
+    ADD CONSTRAINT medicines_dosage_id_fkey FOREIGN KEY (dosage_id) REFERENCES public.medicine_dosages(id);
+
+
+--
+-- Name: medicines medicines_remark_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.medicines
+    ADD CONSTRAINT medicines_remark_id_fkey FOREIGN KEY (remark_id) REFERENCES public.medicine_remarks(id);
 
 
 --
@@ -7192,4 +7348,9 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('014'),
     ('015'),
     ('016'),
-    ('20260914163352');
+    ('020'),
+    ('021'),
+    ('022'),
+    ('023'),
+    ('20260914163352'),
+    ('20260917');
