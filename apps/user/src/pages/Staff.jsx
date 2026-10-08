@@ -15,7 +15,7 @@ import { useDebounce } from '../hooks/useDebounce'
 import { formatCurrency, formatDate, formatExperience, calculateMonthlyActiveDays, getInitials } from '../utils/formatters'
 import styles from './Staff.module.css'
 
-const ROLES = ['receptionist', 'pharmacy', 'doctor', 'admin', 'superadmin']
+const ROLES = ['receptionist', 'assistant_doctor', 'pharmacy', 'doctor', 'admin', 'superadmin']
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 

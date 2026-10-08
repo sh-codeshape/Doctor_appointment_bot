@@ -101,13 +101,14 @@ export const DEFAULT_TIME_SLOTS = [
 /**
  * Staff Role Constants & Navigation Helpers
  */
-export const ALL_STAFF = ['superadmin', 'admin', 'doctor', 'receptionist', 'pharmacy']
+export const ALL_STAFF = ['superadmin', 'admin', 'doctor', 'receptionist', 'pharmacy', 'assistant_doctor']
 
 export const ROLE_HOME = {
   superadmin: '/',
   admin: '/',
   doctor: '/my-patients',
   receptionist: '/appointments',
+  assistant_doctor: '/appointments',
   pharmacy: '/medicine-orders',
 }
 

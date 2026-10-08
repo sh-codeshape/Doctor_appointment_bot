@@ -131,6 +131,11 @@ const NAV_BY_ROLE = {
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
   ],
+  assistant_doctor: [
+    { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
+    { path: '/patients', label: 'Patients', icon: 'Users' },
+    { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+  ],
 }
 
 export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }) {

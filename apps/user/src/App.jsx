@@ -58,7 +58,7 @@ export default function App() {
         }
       >
         <Route index element={<RequireRole roles={['superadmin', 'admin']}><Dashboard /></RequireRole>} />
-        <Route path="appointments" element={<RequireRole roles={['superadmin', 'admin', 'doctor', 'receptionist']}><Appointments /></RequireRole>} />
+        <Route path="appointments" element={<RequireRole roles={['superadmin', 'admin', 'doctor', 'receptionist', 'assistant_doctor']}><Appointments /></RequireRole>} />
         <Route path="hospitalization" element={<RequireRole roles={['superadmin', 'admin', 'receptionist']}><Hospitalization /></RequireRole>} />
         <Route
           path="invoices"
@@ -68,7 +68,7 @@ export default function App() {
         <Route
           path="invoices/prescriptions"
           element={
-            <RequireRole roles={['superadmin', 'admin', 'doctor', 'receptionist']}>
+            <RequireRole roles={['superadmin', 'admin', 'doctor', 'receptionist', 'assistant_doctor']}>
               <Prescription />
             </RequireRole>
           }
@@ -92,12 +92,12 @@ export default function App() {
   }
 />
 
-        <Route path="medicine-orders" element={<RequireRole roles={['superadmin', 'admin', 'pharmacy', 'receptionist', 'doctor']}><MedicineOrders /></RequireRole>} />
+        <Route path="medicine-orders" element={<RequireRole roles={['superadmin', 'admin', 'pharmacy', 'receptionist', 'doctor', 'assistant_doctor']}><MedicineOrders /></RequireRole>} />
         <Route path="doctors" element={<RequireRole roles={['superadmin', 'admin']}><Doctors /></RequireRole>} />
-        <Route path="patients" element={<RequireRole roles={['superadmin', 'admin', 'receptionist', 'pharmacy']}><Patients /></RequireRole>} />
+        <Route path="patients" element={<RequireRole roles={['superadmin', 'admin', 'receptionist', 'pharmacy', 'assistant_doctor']}><Patients /></RequireRole>} />
         <Route path="my-patients" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><MyPatients /></RequireRole>} />
         <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><PrescriptionPage /></RequireRole>} />
-        <Route path="assistant-prescription/:bookingId" element={<RequireRole roles={['receptionist', 'admin', 'superadmin']}><AssistantPrescriptionPage /></RequireRole>} />
+        <Route path="assistant-prescription/:bookingId" element={<RequireRole roles={['receptionist', 'admin', 'superadmin', 'assistant_doctor']}><AssistantPrescriptionPage /></RequireRole>} />
         <Route path="manual-prescribe" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><ManualPrescriptionPage /></RequireRole>} />
         <Route path="register" element={<RequireRole roles={['superadmin', 'admin', 'receptionist']}><Register /></RequireRole>} />
         <Route path="staff" element={<RequireRole roles={['superadmin']}><Staff /></RequireRole>} />

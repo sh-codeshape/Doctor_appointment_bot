@@ -1,3 +1,4 @@
+-- migrate:up
 CREATE TABLE IF NOT EXISTS additional_advice (
     id SERIAL PRIMARY KEY,
     department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
@@ -6,3 +7,6 @@ CREATE TABLE IF NOT EXISTS additional_advice (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- migrate:down
+DROP TABLE IF EXISTS additional_advice;
