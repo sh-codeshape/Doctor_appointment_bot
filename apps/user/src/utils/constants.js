@@ -4,6 +4,7 @@
  */
 export const BOOKING_STATUS = {
   PENDING: 'pending',
+  DRAFTED: 'drafted',
   CONFIRMED: 'confirmed',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
@@ -13,6 +14,7 @@ export const BOOKING_STATUS = {
 
 export const STATUS_LABELS = {
   [BOOKING_STATUS.PENDING]: 'Pending',
+  [BOOKING_STATUS.DRAFTED]: 'Drafted',
   [BOOKING_STATUS.CONFIRMED]: 'Confirmed',
   [BOOKING_STATUS.COMPLETED]: 'Completed',
   [BOOKING_STATUS.CANCELLED]: 'Cancelled',
@@ -22,6 +24,7 @@ export const STATUS_LABELS = {
 
 export const STATUS_COLORS = {
   pending: { text: '#f0ad4e', bg: 'rgba(240, 173, 78, 0.12)' },
+  drafted: { text: '#d29922', bg: 'rgba(210, 153, 34, 0.12)' },
   confirmed: { text: '#25D366', bg: 'rgba(37, 211, 102, 0.12)' },
   completed: { text: '#58a6ff', bg: 'rgba(88, 166, 255, 0.12)' },
   cancelled: { text: '#f85149', bg: 'rgba(248, 81, 73, 0.12)' },

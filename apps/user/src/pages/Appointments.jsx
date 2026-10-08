@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Download, Eye, Edit, CheckCircle, XCircle, CalendarCheck, Printer, RotateCcw, Activity } from 'lucide-react'
+import { Search, Download, Eye, Edit, CheckCircle, XCircle, CalendarCheck, Printer, RotateCcw, Activity, Stethoscope } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { bookingService } from '../services/bookingService'
 import { doctorService } from '../services/doctorService'
@@ -184,13 +184,13 @@ export default function Appointments() {
           >
             <Edit size={16} />
           </button>
-          {!isDoctor && booking.status === BOOKING_STATUS.PENDING && (
+          {user?.role === 'assistant_doctor' && (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.DRAFTED) && (
             <button
               className={`${styles.actionBtn} ${styles.vitals || ''}`}
-              onClick={() => navigate(`/assistant-prescription/${booking.id}`)}
-              title="Add Vitals / Pre-Consultation"
+              onClick={() => navigate(`/prescription/${booking.id}`)}
+              title="Start Consultation (Draft)"
             >
-              <Activity size={16} />
+              <Stethoscope size={16} />
             </button>
           )}
           <button
@@ -470,6 +470,7 @@ export default function Appointments() {
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
+            <option value="drafted">Drafted</option>
             <option value="confirmed">Confirmed</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>

@@ -167,6 +167,10 @@ class BookingService {
     const redisKey = `draft:${id}`;
     await cache.set(redisKey, draftPayload, 86400); // 24 hours in seconds
 
+    if (booking.status === 'pending') {
+      await bookingRepo.updateStatus(id, 'drafted');
+    }
+
     // Save to DB
     const updated = await bookingRepo.updateDraft(id, draftPayload);
     return updated;

@@ -14,7 +14,6 @@ import Settings from './pages/Settings'
 import Login from './pages/Login'
 import PrescriptionPage from './pages/PrescriptionPage'
 import ManualPrescriptionPage from './pages/ManualPrescriptionPage'
-import AssistantPrescriptionPage from './pages/AssistantPrescriptionPage'
 import { useAuth } from './hooks/useAuth'
 import { homeForRole, ALL_STAFF } from './utils/constants'
 import './App.css'
@@ -96,8 +95,7 @@ export default function App() {
         <Route path="doctors" element={<RequireRole roles={['superadmin', 'admin']}><Doctors /></RequireRole>} />
         <Route path="patients" element={<RequireRole roles={['superadmin', 'admin', 'receptionist', 'pharmacy', 'assistant_doctor']}><Patients /></RequireRole>} />
         <Route path="my-patients" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><MyPatients /></RequireRole>} />
-        <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><PrescriptionPage /></RequireRole>} />
-        <Route path="assistant-prescription/:bookingId" element={<RequireRole roles={['receptionist', 'admin', 'superadmin', 'assistant_doctor']}><AssistantPrescriptionPage /></RequireRole>} />
+        <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin', 'assistant_doctor']}><PrescriptionPage /></RequireRole>} />
         <Route path="manual-prescribe" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><ManualPrescriptionPage /></RequireRole>} />
         <Route path="register" element={<RequireRole roles={['superadmin', 'admin', 'receptionist']}><Register /></RequireRole>} />
         <Route path="staff" element={<RequireRole roles={['superadmin']}><Staff /></RequireRole>} />

@@ -12,12 +12,14 @@ import { DoctorPrescriptionPrintHandler } from '../services/DoctorPrescriptionPr
 import { mockDepartments } from '../data/mockData'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
 import styles from './PrescriptionPage.module.css'
 
 export default function PrescriptionPage() {
   const { bookingId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }) => bookingService.updateStatus(id, status),
@@ -408,6 +410,28 @@ export default function PrescriptionPage() {
     const success = await handlePrint()
     if (success && booking?.id) {
       statusMutation.mutate({ id: booking.id, status: 'completed' })
+    }
+  }
+
+  const handleSaveDraft = async () => {
+    try {
+      const draftData = {
+        vitals,
+        doctor_notes: doctorNotes,
+        medicines: selectedMeds,
+        tests: selectedTests,
+        additional_advice: selectedAdvice,
+      }
+      const res = await api.post(`/bookings/${booking.id}/draft`, draftData)
+      if (res.data?.success) {
+        toast.success('Prescription draft saved to Doctor successfully!')
+        navigate('/appointments') // Redirect back to appointments
+      } else {
+        toast.error('Failed to save draft.')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Error saving prescription draft.')
     }
   }
 
@@ -965,24 +989,35 @@ export default function PrescriptionPage() {
 
       {/* Page Footer Actions */}
       <div className={styles.pageFooterActions}>
-        <button className={styles.cancelBtn} onClick={() => navigate('/my-patients')}>
-          <ArrowLeft size={15} /> Back to My Patients
+        <button className={styles.cancelBtn} onClick={() => navigate(-1)}>
+          <ArrowLeft size={15} /> Back
         </button>
 
-        <button 
-          className={styles.savePrintBtn} 
-          style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
-          onClick={handlePrint}
-        >
-          <Printer size={16} /> Print Only
-        </button>
+        {user?.role === 'assistant_doctor' ? (
+          <button 
+            className={styles.savePrintBtn} 
+            onClick={handleSaveDraft}
+          >
+            <CheckCircle size={16} /> Save Draft to Doctor
+          </button>
+        ) : (
+          <>
+            <button 
+              className={styles.savePrintBtn} 
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
+              onClick={handlePrint}
+            >
+              <Printer size={16} /> Print Only
+            </button>
 
-        <button 
-          className={styles.savePrintBtn} 
-          onClick={handlePrintAndComplete}
-        >
-          <CheckCircle size={16} /> Print & Complete Visit
-        </button>
+            <button 
+              className={styles.savePrintBtn} 
+              onClick={handlePrintAndComplete}
+            >
+              <CheckCircle size={16} /> Print & Complete Visit
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

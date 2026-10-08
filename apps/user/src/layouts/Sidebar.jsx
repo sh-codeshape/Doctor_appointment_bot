@@ -46,7 +46,6 @@ const NAV_BY_ROLE = {
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
     { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
-    { path: '/staff', label: 'Staff', icon: 'ClipboardList' },
     { path: '/reports', label: 'Reports', icon: 'BarChart3' },
     { path: '/settings', label: 'Settings', icon: 'Settings' },
     {
@@ -93,7 +92,6 @@ const NAV_BY_ROLE = {
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
     { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
-    { path: '/staff', label: 'Staff', icon: 'ClipboardList' },
     { path: '/reports', label: 'Reports', icon: 'BarChart3' },
   ],
   doctor: [
