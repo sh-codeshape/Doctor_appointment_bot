@@ -33,10 +33,12 @@ services:
     image: amacneil/dbmate:latest
     container_name: docbot-dbmate
     command: ["up"]
+    env_file:
+      - ./apps/api/.env
     environment:
-      DATABASE_URL: postgres://${DB_USER:-docbot}:${DB_PASSWORD:-docbot}@${DB_HOST:-postgres}:5432/${DB_NAME:-docbot}?sslmode=disable
+      DATABASE_URL: ${DATABASE_URL:-postgres://${DB_USER:-docbot}:${DB_PASSWORD:-docbot}@${DB_HOST:-postgres}:5432/${DB_NAME:-docbot}?sslmode=disable}
     volumes:
-      - ${DBMATE_PATH}:/db/migrations
+      - ${DBMATE_PATH:-./apps/api/db/migrations}:/db/migrations
     depends_on:
       postgres:
         condition: service_healthy
