@@ -5,6 +5,7 @@ import Appointments from './pages/Appointments'
 import Doctors from './pages/Doctors'
 import Hospitalization from './pages/Hospitalization'
 import MedicineOrders from './pages/MedicineOrders'
+import Medicines from './pages/Medicines'
 import Patients from './pages/Patients'
 import MyPatients from './pages/MyPatients'
 import Register from './pages/Register'
@@ -92,6 +93,7 @@ export default function App() {
 />
 
         <Route path="medicine-orders" element={<RequireRole roles={['superadmin', 'admin', 'pharmacy', 'receptionist', 'doctor', 'assistant_doctor']}><MedicineOrders /></RequireRole>} />
+        <Route path="medicines" element={<RequireRole roles={['superadmin', 'admin', 'pharmacy', 'receptionist', 'doctor', 'assistant_doctor']}><Medicines /></RequireRole>} />
         <Route path="doctors" element={<RequireRole roles={['superadmin', 'admin']}><Doctors /></RequireRole>} />
         <Route path="patients" element={<RequireRole roles={['superadmin', 'admin', 'receptionist', 'pharmacy', 'assistant_doctor']}><Patients /></RequireRole>} />
         <Route path="my-patients" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><MyPatients /></RequireRole>} />

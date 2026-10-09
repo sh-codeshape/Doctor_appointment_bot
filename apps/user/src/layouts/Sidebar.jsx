@@ -42,6 +42,7 @@ const NAV_BY_ROLE = {
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
     { path: '/hospitalization', label: 'Hospitalization (IPD)', icon: 'Bed' },
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
     { path: '/doctors', label: 'Doctors', icon: 'Stethoscope' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
@@ -89,6 +90,7 @@ const NAV_BY_ROLE = {
   ],
 },
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
     { path: '/doctors', label: 'Doctors', icon: 'Stethoscope' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
@@ -99,6 +101,7 @@ const NAV_BY_ROLE = {
     { path: '/my-patients', label: 'My Patients', icon: 'Users' },
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
     { path: '/manual-prescribe', label: 'Manual Prescribe', icon: 'Stethoscope' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
   ],
   receptionist: [
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
@@ -125,15 +128,18 @@ const NAV_BY_ROLE = {
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/register', label: 'Register Patient', icon: 'UserPlus' },
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
   ],
   pharmacy: [
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
   ],
   assistant_doctor: [
     { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
+    { path: '/medicines', label: 'Medicines', icon: 'Pill' },
   ],
 }
 
