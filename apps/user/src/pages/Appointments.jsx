@@ -187,7 +187,7 @@ export default function Appointments() {
           {user?.role === 'assistant_doctor' && (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.DRAFTED) && (
             <button
               className={`${styles.actionBtn} ${styles.vitals || ''}`}
-              onClick={() => navigate(`/prescription/${booking.id}`)}
+              onClick={() => navigate(`/prescribe/${booking.id}`)}
               title="Start Consultation (Draft)"
             >
               <Stethoscope size={16} />
