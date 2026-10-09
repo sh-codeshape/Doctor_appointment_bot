@@ -111,7 +111,7 @@ export const ROLE_HOME = {
   admin: '/',
   doctor: '/my-patients',
   receptionist: '/appointments',
-  assistant_doctor: '/appointments',
+  assistant_doctor: '/assistant-patients',
   pharmacy: '/medicine-orders',
 }
 
