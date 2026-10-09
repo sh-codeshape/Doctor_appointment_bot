@@ -28,7 +28,7 @@ const getTodayStr = () => {
   return `${yyyy}-${mm}-${dd}`
 }
 
-export default function Appointments() {
+export default function AssistantPatients() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isDoctor = user?.role === 'doctor'
@@ -171,6 +171,13 @@ export default function Appointments() {
       <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
         <div className={styles.rowActions}>
           <button
+            className={`${styles.actionBtn} ${styles.vitals || ''}`}
+            onClick={() => navigate(`/assistant-prescribe/${booking.id}`)}
+            title="Start Consultation (Draft)"
+          >
+            <Stethoscope size={16} />
+          </button>
+          <button
             className={styles.actionBtn}
             onClick={() => handleViewDetail(booking)}
             title="View Details"
@@ -179,59 +186,11 @@ export default function Appointments() {
           </button>
           <button
             className={styles.actionBtn}
-            onClick={() => navigate('/register', { state: { editBooking: booking } })}
-            title="Edit Booking & Patient Details"
-          >
-            <Edit size={16} />
-          </button>
-
-          <button
-            className={styles.actionBtn}
             onClick={() => handlePrint(booking)}
             title="Print OPD Consultation Slip"
           >
             <Printer size={16} />
           </button>
-          {booking.status === BOOKING_STATUS.PENDING && (
-            <button
-              className={`${styles.actionBtn} ${styles.confirm}`}
-              onClick={() => {
-                handleStatusChange(booking.id, BOOKING_STATUS.CONFIRMED)
-                handlePrint({ ...booking, status: 'confirmed' })
-              }}
-              title="Confirm & Print Slip"
-            >
-              <CheckCircle size={16} />
-            </button>
-          )}
-          {booking.status === BOOKING_STATUS.CONFIRMED && (
-            <button
-              className={`${styles.actionBtn} ${styles.confirm}`}
-              onClick={() => handleStatusChange(booking.id, BOOKING_STATUS.COMPLETED)}
-              title="Mark Completed"
-            >
-              <CheckCircle size={16} />
-            </button>
-          )}
-          {booking.status !== BOOKING_STATUS.CANCELLED ? (
-            <button
-              className={`${styles.actionBtn} ${styles.cancel}`}
-              onClick={() => handleStatusChange(booking.id, BOOKING_STATUS.CANCELLED)}
-              title="Cancel Booking"
-            >
-              <XCircle size={16} />
-            </button>
-          ) : (
-            isAdmin && (
-              <button
-                className={`${styles.actionBtn} ${styles.confirm}`}
-                onClick={() => handleStatusChange(booking.id, BOOKING_STATUS.PENDING)}
-                title="Reopen (Set to Pending)"
-              >
-                <RotateCcw size={16} />
-              </button>
-            )
-          )}
         </div>
       </td>
     </tr>
@@ -331,9 +290,9 @@ export default function Appointments() {
   return (
     <div className={styles.page}>
       <PageHeader
-        title={isDoctor ? 'My Appointments (OPD)' : 'Appointments (OPD)'}
-        subtitle={isDoctor ? 'Your OPD queue · confirm or complete visits' : 'OPD bookings across all doctors · confirm, complete or cancel'}
-        icon={CalendarCheck}
+        title="Patient List"
+        subtitle="Assistant Doctor Patient Queue · filter by doctor and start consultation drafts"
+        icon={Stethoscope}
       />
       {/* ── Summary Stats Row — scoped to the selected preferredDate ── */}
       <div className={styles.statsRow}>
@@ -480,7 +439,7 @@ export default function Appointments() {
             <option value="true">Old Patient (पुराना मरीज)</option>
             <option value="false">New Patient (नया मरीज)</option>
           </select>
-          {!isDoctor && (
+          {true && (
             <select
               className={styles.select}
               value={doctorFilter}

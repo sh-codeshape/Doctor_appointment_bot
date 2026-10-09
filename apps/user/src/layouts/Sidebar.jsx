@@ -136,7 +136,7 @@ const NAV_BY_ROLE = {
     { path: '/patients', label: 'Patients', icon: 'Users' },
   ],
   assistant_doctor: [
-    { path: '/appointments', label: 'Appointments (OPD)', icon: 'CalendarCheck' },
+    { path: '/assistant-patients', label: 'Patient List', icon: 'ClipboardList' },
     { path: '/patients', label: 'Patients', icon: 'Users' },
     { path: '/medicine-orders', label: 'Medicine Orders', icon: 'Pill' },
     { path: '/medicines', label: 'Medicines', icon: 'Pill' },

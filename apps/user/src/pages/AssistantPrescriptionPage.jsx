@@ -15,7 +15,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import styles from './PrescriptionPage.module.css'
 
-export default function PrescriptionPage() {
+export default function AssistantPrescriptionPage() {
   const { bookingId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -413,7 +413,7 @@ export default function PrescriptionPage() {
     }
   }
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = async (skipNavigation = false) => {
     try {
       const draftData = {
         vitals,
@@ -424,14 +424,19 @@ export default function PrescriptionPage() {
       }
       const res = await api.post(`/bookings/${booking.id}/draft`, draftData)
       if (res.data?.success) {
-        toast.success('Prescription draft saved to Doctor successfully!')
-        navigate('/appointments') // Redirect back to appointments
+        toast.success('Prescription draft saved successfully!')
+        if (!skipNavigation) {
+          navigate('/assistant-patients')
+        }
+        return true
       } else {
         toast.error('Failed to save draft.')
+        return false
       }
     } catch (err) {
       console.error(err)
       toast.error('Error saving prescription draft.')
+      return false
     }
   }
 
@@ -1049,31 +1054,28 @@ export default function PrescriptionPage() {
           <ArrowLeft size={15} /> Back
         </button>
 
-        {user?.role === 'assistant_doctor' ? (
-          <button 
-            className={styles.savePrintBtn} 
-            onClick={handleSaveDraft}
-          >
-            <CheckCircle size={16} /> Save Draft to Doctor
-          </button>
-        ) : (
-          <>
-            <button 
-              className={styles.savePrintBtn} 
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
-              onClick={handlePrint}
-            >
-              <Printer size={16} /> Print Only
-            </button>
+        <button 
+          className={styles.savePrintBtn} 
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }} 
+          onClick={() => handleSaveDraft()}
+        >
+          <Save size={16} /> Save Draft Only
+        </button>
 
-            <button 
-              className={styles.savePrintBtn} 
-              onClick={handlePrintAndComplete}
-            >
-              <CheckCircle size={16} /> Print & Complete Visit
-            </button>
-          </>
-        )}
+        <button 
+          className={styles.savePrintBtn} 
+          onClick={async () => {
+            const saved = await handleSaveDraft(true) // save draft without navigating
+            if (saved) {
+              const printed = await handlePrint()
+              if (printed) {
+                navigate('/assistant-patients')
+              }
+            }
+          }}
+        >
+          <Printer size={16} /> Print & Save Draft
+        </button>
       </div>
     </div>
   )

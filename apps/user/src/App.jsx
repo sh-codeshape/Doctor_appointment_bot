@@ -8,12 +8,14 @@ import MedicineOrders from './pages/MedicineOrders'
 import Medicines from './pages/Medicines'
 import Patients from './pages/Patients'
 import MyPatients from './pages/MyPatients'
+import AssistantPatients from './pages/AssistantPatients'
 import Register from './pages/Register'
 import Staff from './pages/Staff'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import PrescriptionPage from './pages/PrescriptionPage'
+import AssistantPrescriptionPage from './pages/AssistantPrescriptionPage'
 import ManualPrescriptionPage from './pages/ManualPrescriptionPage'
 import { useAuth } from './hooks/useAuth'
 import { homeForRole, ALL_STAFF } from './utils/constants'
@@ -97,7 +99,9 @@ export default function App() {
         <Route path="doctors" element={<RequireRole roles={['superadmin', 'admin']}><Doctors /></RequireRole>} />
         <Route path="patients" element={<RequireRole roles={['superadmin', 'admin', 'receptionist', 'pharmacy', 'assistant_doctor']}><Patients /></RequireRole>} />
         <Route path="my-patients" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><MyPatients /></RequireRole>} />
-        <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin', 'assistant_doctor']}><PrescriptionPage /></RequireRole>} />
+        <Route path="assistant-patients" element={<RequireRole roles={['assistant_doctor']}><AssistantPatients /></RequireRole>} />
+        <Route path="prescribe/:bookingId" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><PrescriptionPage /></RequireRole>} />
+        <Route path="assistant-prescribe/:bookingId" element={<RequireRole roles={['assistant_doctor']}><AssistantPrescriptionPage /></RequireRole>} />
         <Route path="manual-prescribe" element={<RequireRole roles={['doctor', 'admin', 'superadmin']}><ManualPrescriptionPage /></RequireRole>} />
         <Route path="register" element={<RequireRole roles={['superadmin', 'admin', 'receptionist']}><Register /></RequireRole>} />
         <Route path="staff" element={<RequireRole roles={['superadmin']}><Staff /></RequireRole>} />
