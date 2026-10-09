@@ -1,4 +1,4 @@
-export const ROLES = ['superadmin', 'admin', 'doctor', 'receptionist', 'pharmacy']
+export const ROLES = ['superadmin', 'admin', 'doctor', 'receptionist', 'pharmacy', 'assistant_doctor']
 
 export const STAFF_CODE_PREFIX = {
   superadmin: 'KGN_SA_',
@@ -6,4 +6,5 @@ export const STAFF_CODE_PREFIX = {
   doctor: 'KGN_DOC_',
   receptionist: 'KGN_RC_',
   pharmacy: 'KGN_PHR_',
+  assistant_doctor: 'KGN_AST_',
 }
