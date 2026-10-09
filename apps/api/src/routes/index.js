@@ -16,8 +16,8 @@ import invoiceRoutes from '../modules/invoices/invoice.route.js'
 import { parseAnyDate } from '../utils/dateHelpers.js'
 import sql from '../config/database.js'
 
-const { SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY } = ROLES
-const STAFF = [SUPERADMIN, ADMIN, RECEPTIONIST, PHARMACY]
+const { SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR } = ROLES
+const STAFF = [SUPERADMIN, ADMIN, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR]
 
 const router = Router()
 
@@ -83,10 +83,10 @@ router.post('/bookings', async (req, res, next) => {
 router.use(authMiddleware)
 
 // Doctors — staff dashboard management
-router.use('/doctors', requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST), doctorRoutes)
+router.use('/doctors', requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, ASSISTANT_DOCTOR), doctorRoutes)
 
 // Bookings (OPD + hospitalization) — staff dashboard management
-router.use('/bookings', requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST), bookingRoutes)
+router.use('/bookings', requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, ASSISTANT_DOCTOR), bookingRoutes)
 
 // Medicine orders — pharmacy full, receptionist read-only
 router.use('/medicine-orders', requireRole(SUPERADMIN, ADMIN, PHARMACY, RECEPTIONIST, DOCTOR), medicineOrderRoutes)
@@ -481,9 +481,9 @@ router.delete('/services/:id', requireRole(SUPERADMIN, ADMIN), serviceController
 
 // Patients — doctor sees own only
 router.get('/patients/mine',  requireRole(DOCTOR), patientController.getMine)
-router.post('/patients/register', requireRole(SUPERADMIN, ADMIN, RECEPTIONIST), patientController.register)
-router.get('/patients',       requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY), patientController.search)
-router.get('/patients/:id',   requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY), patientController.getById)
+router.post('/patients/register', requireRole(SUPERADMIN, ADMIN, RECEPTIONIST, ASSISTANT_DOCTOR), patientController.register)
+router.get('/patients',       requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR), patientController.search)
+router.get('/patients/:id',   requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR), patientController.getById)
 
 // Settings — superadmin only
 router.get('/settings', requireRole(SUPERADMIN), settingsController.get)

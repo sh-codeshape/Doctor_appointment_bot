@@ -29,4 +29,5 @@ export const ROLES = {
   DOCTOR: 'doctor',
   RECEPTIONIST: 'receptionist',
   PHARMACY: 'pharmacy',
+  ASSISTANT_DOCTOR: 'assistant_doctor',
 }
