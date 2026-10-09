@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { medicineMasterService } from '../services/medicineMasterService'
+import { Pill, Search, Plus, Edit2, Trash2, X, AlertCircle } from 'lucide-react'
 import styles from './Medicines.module.css'
 
 export default function Medicines() {
@@ -140,33 +141,20 @@ export default function Medicines() {
       <div className={styles.header}>
         <div className={styles.headerInfo}>
           <h1>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="28" height="28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 22H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4" />
-              <path d="M16 2v4" />
-              <path d="M8 2v4" />
-              <path d="M3 10h18" />
-              <path d="M19 15v6" />
-              <path d="M16 18h6" />
-            </svg>
+            <Pill size={28} />
             Medicine Master
           </h1>
           <p>Manage medicines, dosages, and remarks for prescriptions.</p>
         </div>
         <button onClick={() => handleOpenModal()} className={styles.addButton}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={20} />
           Add Medicine
         </button>
       </div>
 
       <div className={styles.controls}>
         <div className={styles.searchBar}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search size={20} />
           <input
             type="text"
             placeholder="Search medicines by name or dosage form..."
@@ -184,13 +172,9 @@ export default function Medicines() {
           </div>
         ) : medicines.length === 0 ? (
           <div className={styles.emptyState}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-              <path d="M12 12v9" />
-              <path d="m8 17 4 4 4-4" />
-            </svg>
+            <AlertCircle size={48} />
             <h3>No medicines found</h3>
-            <p>Try adjusting your search or add a new medicine.</p>
+            <p>Try adjusting your search or add a new medicine to get started.</p>
           </div>
         ) : (
           <>
@@ -218,18 +202,10 @@ export default function Medicines() {
                     <td>
                       <div className={styles.actions}>
                         <button onClick={() => handleOpenModal(med)} className={`${styles.actionBtn} ${styles.editBtn}`} title="Edit">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
+                          <Edit2 size={18} />
                         </button>
                         <button onClick={() => handleDelete(med.id)} className={`${styles.actionBtn} ${styles.deleteBtn}`} title="Delete">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
@@ -271,10 +247,7 @@ export default function Medicines() {
             <div className={styles.modalHeader}>
               <h2>{editingMedicine ? 'Edit Medicine' : 'Add New Medicine'}</h2>
               <button onClick={handleCloseModal} className={styles.closeBtn}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X size={24} />
               </button>
             </div>
             
@@ -403,3 +376,4 @@ export default function Medicines() {
     </div>
   )
 }
+
