@@ -87,4 +87,15 @@ export const patientController = {
       res.json(patients)
     } catch (err) { next(err) }
   },
+
+  async update(req, res, next) {
+    try {
+      if (req.body.gender) {
+        req.body.gender = req.body.gender.toLowerCase()
+      }
+      const updated = await patientService.updatePatient(req.params.id, req.body)
+      if (!updated) return res.status(404).json({ success: false, message: 'Patient not found' })
+      res.json({ success: true, patient: updated })
+    } catch (err) { next(err) }
+  },
 }

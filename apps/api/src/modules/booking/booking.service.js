@@ -158,6 +158,15 @@ class BookingService {
       data.gender = data.gender.toLowerCase();
     }
 
+    if (data && data.departmentId !== undefined) {
+      const parsedId = parseInt(data.departmentId, 10);
+      if (isNaN(parsedId)) {
+        data.departmentId = null;
+      } else {
+        data.departmentId = parsedId;
+      }
+    }
+
     const updated = await bookingRepo.updateBooking(id, data);
     await cache.invalidate("dashboard:*");
     return updated;

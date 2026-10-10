@@ -95,4 +95,13 @@ export const patientService = {
     normalized.bookings = (data.bookings || []).map(normalizeBookingForHistory)
     return normalized
   },
+
+  async updatePatient(id, payload) {
+    if (isMockMode()) {
+      await new Promise((r) => setTimeout(r, 200))
+      return { success: true }
+    }
+    const { data } = await api.put(`/patients/${id}`, payload)
+    return data
+  },
 }

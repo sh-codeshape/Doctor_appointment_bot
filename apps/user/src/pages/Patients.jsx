@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search, Eye, Users, Filter } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Search, Eye, Users, Filter, Edit } from 'lucide-react'
 import { patientService } from '../services/patientService'
 import { useDebounce } from '../hooks/useDebounce'
 import { formatDate, formatPhone, getInitials } from '../utils/formatters'
@@ -18,8 +18,11 @@ export default function Patients() {
   const [sortBy, setSortBy] = useState('lastVisit')
   const [sortOrder, setSortOrder] = useState('desc')
   const [selectedPatient, setSelectedPatient] = useState(null)
+  const [editingPatient, setEditingPatient] = useState(null)
   const [page, setPage] = useState(1)
   const limit = 10
+
+  const queryClient = useQueryClient()
 
   const debouncedSearch = useDebounce(search, 400)
 
@@ -36,6 +39,27 @@ export default function Patients() {
     queryFn: () => patientService.getPatient(selectedPatient.id),
     enabled: !!selectedPatient,
   })
+
+  const updatePatientMutation = useMutation({
+    mutationFn: (data) => patientService.updatePatient(editingPatient.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['patients'])
+      if (selectedPatient && selectedPatient.id === editingPatient.id) {
+        queryClient.invalidateQueries(['patient', editingPatient.id])
+      }
+      setEditingPatient(null)
+    }
+  })
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.target)
+    const data = Object.fromEntries(formData.entries())
+    // convert strings appropriately
+    if (data.isOld === 'true') data.isOld = true
+    if (data.isOld === 'false') data.isOld = false
+    updatePatientMutation.mutate(data)
+  }
 
   const allPatients = patients || []
   const total = allPatients.length
@@ -75,13 +99,22 @@ export default function Patients() {
         {formatDate(patient.last_visit)}
       </td>
       <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-primary)' }}>
-        <button
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: 'var(--text-secondary)', transition: 'all 0.15s' }}
-          onClick={() => setSelectedPatient(patient)}
-          title="View History"
-        >
-          <Eye size={16} />
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: 'var(--text-secondary)', transition: 'all 0.15s' }}
+            onClick={() => setSelectedPatient(patient)}
+            title="View History"
+          >
+            <Eye size={16} />
+          </button>
+          <button
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: 'var(--text-secondary)', transition: 'all 0.15s' }}
+            onClick={() => setEditingPatient(patient)}
+            title="Edit Patient"
+          >
+            <Edit size={16} />
+          </button>
+        </div>
       </td>
     </tr>
   )
@@ -236,6 +269,68 @@ export default function Patients() {
             )}
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!editingPatient}
+        onClose={() => setEditingPatient(null)}
+        title="Edit Patient Details"
+      >
+        <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Name</label>
+            <input name="name" defaultValue={editingPatient?.name} required style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Mobile</label>
+              <input name="phone" defaultValue={editingPatient?.mobile} required style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Age</label>
+              <input name="age" type="number" defaultValue={editingPatient?.age} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Gender</label>
+              <select name="gender" defaultValue={editingPatient?.gender || 'Male'} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }}>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Patient Type</label>
+              <select name="isOld" defaultValue={editingPatient?.is_old ? 'true' : 'false'} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }}>
+                <option value="false">New Patient</option>
+                <option value="true">Old Patient</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>District</label>
+              <input name="district" defaultValue={editingPatient?.district} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>PIN Code</label>
+              <input name="pinCode" defaultValue={editingPatient?.pinCode} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Address</label>
+            <input name="address" defaultValue={editingPatient?.address} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+            <button type="button" onClick={() => setEditingPatient(null)} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={updatePatientMutation.isLoading} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: 'white', cursor: updatePatientMutation.isLoading ? 'not-allowed' : 'pointer' }}>
+              {updatePatientMutation.isLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   )

@@ -485,6 +485,7 @@ router.get('/patients/mine',  requireRole(DOCTOR), patientController.getMine)
 router.post('/patients/register', requireRole(SUPERADMIN, ADMIN, RECEPTIONIST, ASSISTANT_DOCTOR), patientController.register)
 router.get('/patients',       requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR), patientController.search)
 router.get('/patients/:id',   requireRole(SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR), patientController.getById)
+router.put('/patients/:id',   requireRole(SUPERADMIN, ADMIN, RECEPTIONIST, ASSISTANT_DOCTOR), patientController.update)
 
 // Settings — superadmin only
 router.get('/settings', requireRole(SUPERADMIN), settingsController.get)
