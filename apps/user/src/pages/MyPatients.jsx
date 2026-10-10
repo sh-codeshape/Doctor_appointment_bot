@@ -281,6 +281,10 @@ export default function MyPatients() {
               onChange={(e) => {
                 setSearch(e.target.value)
                 setPage(1)
+                if (e.target.value) {
+                  setFromDate('')
+                  setToDate('')
+                }
               }}
               id="booking-search"
             />
