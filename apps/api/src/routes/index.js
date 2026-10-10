@@ -15,6 +15,7 @@ import userRoutes from '../modules/user/user.routes.js'
 import invoiceRoutes from '../modules/invoices/invoice.route.js'
 import { parseAnyDate } from '../utils/dateHelpers.js'
 import sql from '../config/database.js'
+import redis from '../config/redis.js'
 
 const { SUPERADMIN, ADMIN, DOCTOR, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR } = ROLES
 const STAFF = [SUPERADMIN, ADMIN, RECEPTIONIST, PHARMACY, ASSISTANT_DOCTOR]
@@ -139,6 +140,28 @@ router.get('/medicines', requireRole(...STAFF, DOCTOR), async (req, res, next) =
         ORDER BY m.name ASC
       `
     }
+    
+    // Fetch frequency scores from Redis
+    const scoreMap = {}
+    try {
+      const zrevrange = await redis.zrevrange('medicine_frequency', 0, -1, 'WITHSCORES')
+      for (let i = 0; i < zrevrange.length; i += 2) {
+        scoreMap[zrevrange[i]] = parseInt(zrevrange[i + 1], 10)
+      }
+    } catch (redisErr) {
+      console.error('Redis error while fetching medicine frequency:', redisErr.message)
+    }
+
+    // Sort by frequency (descending), then alphabetically
+    rows.sort((a, b) => {
+      const scoreA = scoreMap[a.id] || 0
+      const scoreB = scoreMap[b.id] || 0
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA // higher score first
+      }
+      return a.name.localeCompare(b.name)
+    })
+
     res.json({ data: rows })
   } catch (err) { next(err) }
 })
@@ -191,6 +214,13 @@ const saveMedicineHandler = async (req, res, next) => {
       if (rId && existing.remark_id !== rId) updates.remark_id = rId
       if (dsgId && existing.dosage_id !== dsgId) updates.dosage_id = dsgId
 
+      // Always increment frequency when a medicine is saved/prescribed
+      try {
+        await redis.zincrby('medicine_frequency', 1, existing.id)
+      } catch (redisErr) {
+        console.error('Redis error while incrementing frequency:', redisErr.message)
+      }
+
       if (Object.keys(updates).length > 0) {
         const [updated] = await sql`
           UPDATE medicines SET ${sql(updates)} WHERE id = ${existing.id} RETURNING *
@@ -209,6 +239,13 @@ const saveMedicineHandler = async (req, res, next) => {
       VALUES (${dId}, ${nameTrimmed}, ${dosage_form || 'Tab'}, ${default_frequency || ''}, ${default_duration || ''}, true, ${rId}, ${dsgId})
       RETURNING *
     `
+    // Initial frequency for new medicine
+    try {
+      await redis.zincrby('medicine_frequency', 1, created.id)
+    } catch (redisErr) {
+      console.error('Redis error while incrementing frequency:', redisErr.message)
+    }
+    
     const dataEnriched = { 
       ...created, 
       remarks: remarks ? remarks.trim() : null,
@@ -267,10 +304,25 @@ router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, nex
       if (!updated) {
         return res.status(404).json({ success: false, message: 'Medicine not found' })
       }
+      
+      // Increment frequency
+      try {
+        await redis.zincrby('medicine_frequency', 1, id)
+      } catch (redisErr) {
+        console.error('Redis error while incrementing frequency:', redisErr.message)
+      }
+
       return res.json({ success: true, data: { ...updated, remarks: remarks ? remarks.trim() : null, default_dosage: default_dosage ? default_dosage.trim() : null } })
     }
     
     const [existing] = await sql`SELECT * FROM medicines WHERE id = ${id} LIMIT 1`
+    if (existing) {
+      try {
+        await redis.zincrby('medicine_frequency', 1, id)
+      } catch (redisErr) {
+        console.error('Redis error while incrementing frequency:', redisErr.message)
+      }
+    }
     res.json({ success: true, data: existing })
   } catch (err) { next(err) }
 })
