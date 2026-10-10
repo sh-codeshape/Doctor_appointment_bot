@@ -226,7 +226,7 @@ router.post('/savemedicine', requireRole(...STAFF, DOCTOR), saveMedicineHandler)
 router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, next) => {
   try {
     const { id } = req.params
-    const { remarks, default_dosage, dosage_form, default_frequency, default_duration } = req.body
+    const { name, remarks, default_dosage, dosage_form, default_frequency, default_duration } = req.body
     
     let rId = null
     if (remarks && remarks.trim()) {
@@ -253,6 +253,7 @@ router.put('/medicines/:id', requireRole(...STAFF, DOCTOR), async (req, res, nex
     }
     
     const updates = {}
+    if (name !== undefined && name.trim() !== '') updates.name = name.trim()
     if (rId !== null) updates.remark_id = rId
     if (dsgId !== null) updates.dosage_id = dsgId
     if (dosage_form) updates.dosage_form = dosage_form
