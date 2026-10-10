@@ -154,6 +154,10 @@ class BookingService {
     const booking = await bookingRepo.findById(id);
     if (!booking) throw new AppError("Booking not found", 404);
 
+    if (data && data.gender) {
+      data.gender = data.gender.toLowerCase();
+    }
+
     const updated = await bookingRepo.updateBooking(id, data);
     await cache.invalidate("dashboard:*");
     return updated;

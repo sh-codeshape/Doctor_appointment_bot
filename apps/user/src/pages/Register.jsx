@@ -143,12 +143,17 @@ export default function Register() {
           : String(matchedDoc.departmentId || matchedDoc.department || '')
       }
 
+      const ageVal = editBooking.patientId?.age || editBooking.age;
+      const rawGender = editBooking.patientId?.gender || editBooking.gender || 'Male';
+      const genderVal = rawGender ? rawGender.charAt(0).toUpperCase() + rawGender.slice(1).toLowerCase() : 'Male';
+      const isOldVal = editBooking.patientId?.isOld !== undefined ? editBooking.patientId.isOld : (editBooking.is_old || editBooking.isOld);
+
       setForm({
         phone: editBooking.mobile || editBooking.patient_phone || '',
         name: editBooking.patient_name || '',
-        age: editBooking.age ? String(editBooking.age) : '',
-        gender: editBooking.gender || 'Male',
-        isOld: Boolean(editBooking.is_old || editBooking.isOld),
+        age: ageVal ? String(ageVal) : '',
+        gender: genderVal,
+        isOld: Boolean(isOldVal),
         district: editBooking.district || '',
         address: editBooking.address || '',
         pinCode: editBooking.pinCode || '',

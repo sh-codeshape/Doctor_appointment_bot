@@ -9,6 +9,9 @@ import { bookingService } from '../services/bookingService'
 import { prescriptionService } from '../services/prescriptionService'
 import { doctorService } from '../services/doctorService'
 import { printService } from '../services/printService'
+import { patientService } from '../services/patientService'
+import { registrationService } from '../services/registrationService'
+import api from '../services/api'
 import { DoctorPrescriptionPrintHandler } from '../services/DoctorPrescriptionPrintHandler'
 import { mockDepartments } from '../data/mockData'
 import toast from 'react-hot-toast'
@@ -363,6 +366,124 @@ export default function ManualPrescriptionPage() {
     }
   }
 
+  const [patientSearch, setPatientSearch] = useState('')
+  const [patientSearchResults, setPatientSearchResults] = useState([])
+  const [selectedPatientId, setSelectedPatientId] = useState(null)
+  const [isSearchingPatient, setIsSearchingPatient] = useState(false)
+
+  useEffect(() => {
+    if (!patientSearch || patientSearch.length < 3) {
+      setPatientSearchResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingPatient(true)
+      try {
+        const results = await patientService.getPatients(patientSearch)
+        setPatientSearchResults(results || [])
+      } catch (err) {
+        console.error('Failed to search patients', err)
+      } finally {
+        setIsSearchingPatient(false)
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [patientSearch])
+
+  const handleSelectPatient = (p) => {
+    setPatientDetails({
+      patient_name: p.name,
+      age: p.age || '',
+      gender: p.gender === 'Female' || p.gender === 'F' ? 'F' : p.gender === 'Other' || p.gender === 'O' ? 'O' : 'M',
+      mobile: p.mobile || '',
+      place: p.district || p.address || ''
+    })
+    setSelectedPatientId(p.id)
+    setPatientSearch('')
+    setPatientSearchResults([])
+  }
+
+  const handlePrintAndComplete = async () => {
+    try {
+      const targetDeptId = deptFilter !== 'all' ? deptFilter : 1
+      const isNew = (id) => typeof id === 'number' && id > 1000000000000
+      
+      const selectedDoc = doctors.find(d => String(d.id || d._id) === String(selectedDoctorId))
+      
+      // Auto-add catalog items to backend if needed
+      if (selectedMeds.length > 0 || selectedTests.length > 0 || selectedAdvice.length > 0) {
+        await Promise.allSettled([
+          ...selectedMeds.map((med) => {
+            const data = {
+              department_id: targetDeptId, name: med.name, default_dosage: med.dosage, default_frequency: med.frequency, default_duration: med.duration, remarks: med.remarks,
+            }
+            return isNew(med.id) ? prescriptionService.addMedicine(data) : prescriptionService.updateMedicine(med.id, { remarks: med.remarks, default_dosage: med.dosage, default_frequency: med.frequency, default_duration: med.duration, dosage_form: med.dosage_form })
+          }),
+          ...selectedTests.map((test) => {
+            const data = { department_id: targetDeptId, name: test.name }
+            return isNew(test.id) ? prescriptionService.addLabTest(data) : prescriptionService.updateLabTest(test.id, data)
+          }),
+          ...selectedAdvice.map((adv) => {
+            const data = { department_id: targetDeptId, advice: adv.advice }
+            return isNew(adv.id) ? prescriptionService.addAdditionalAdvice(data) : prescriptionService.updateAdditionalAdvice(adv.id, data)
+          }),
+        ])
+      }
+
+      let printSlipData = {
+        ...patientDetails,
+        type: 'OPD',
+        token_number: 'MANUAL',
+        doctor_name: selectedDoc ? selectedDoc.name : (user?.name || 'General Doctor'),
+        doctor_qualification: selectedDoc ? (selectedDoc.qualification || selectedDoc.specialization || selectedDoc.department || '') : '',
+        date: new Date().toISOString(),
+        prescription: { vitals, doctor_notes: doctorNotes, medicines: selectedMeds, tests: selectedTests, additional_advice: selectedAdvice },
+      }
+
+      let activeBookingId = null
+      
+      // If a known patient was selected, create a walk-in booking & save draft so history is retained
+      if (selectedPatientId && selectedDoc) {
+        try {
+          const todayStr = new Date().toISOString().split('T')[0]
+          // Register walk-in
+          const regRes = await registrationService.register({
+            name: patientDetails.patient_name,
+            phone: patientDetails.mobile || '0000000000',
+            age: patientDetails.age || 30,
+            gender: patientDetails.gender === 'F' ? 'Female' : patientDetails.gender === 'M' ? 'Male' : 'Other',
+            isOld: true,
+            district: patientDetails.place || 'Manual Entry',
+            address: patientDetails.place || 'Manual Entry',
+            type: 'OPD',
+            preferredDate: todayStr,
+            doctorId: selectedDoc.id || selectedDoc._id,
+          })
+          
+          activeBookingId = regRes?.booking?.id || regRes?.data?.booking?.id
+          if (activeBookingId) {
+            printSlipData = { ...printSlipData, ...regRes.booking, token_number: regRes.booking?.token_number || regRes.data?.booking?.token_number || 'MANUAL' }
+            // Save Draft
+            await api.post(`/bookings/${activeBookingId}/draft`, { vitals, doctor_notes: doctorNotes, medicines: selectedMeds, tests: selectedTests, additional_advice: selectedAdvice }).catch(() => {})
+          }
+        } catch(err) {
+          console.warn("Failed to create walk-in booking for manual prescription", err)
+        }
+      }
+
+      await DoctorPrescriptionPrintHandler.printPrescription(printSlipData)
+      toast.success('Prescription printed successfully!', { duration: 4000 })
+      
+      if (activeBookingId) {
+        statusMutation.mutate({ id: activeBookingId, status: 'completed' })
+      }
+      
+    } catch (err) {
+      console.error('Print failed', err)
+      toast.error('Failed to generate prescription print slip')
+    }
+  }
+
   if (isLoading) return <div className={styles.page}><Loader /></div>
 
   return (
@@ -371,10 +492,39 @@ export default function ManualPrescriptionPage() {
         title="Manual Prescription"
         subtitle="Write a prescription for a walk-in or manual patient"
         icon={Stethoscope}
+        action={
+          <button className={styles.saveBtn} onClick={handlePrintAndComplete} disabled={!patientDetails.patient_name}>
+            <CheckCircle size={16} /> Complete & Print
+          </button>
+        }
       />
 
       {/* Manual Patient Details Form */}
       <Card title="Patient Details">
+        <div style={{ marginBottom: 16, position: 'relative' }}>
+          <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Search Existing Patient (By Mobile or UHID)</label>
+          <div className={styles.searchBox} style={{ maxWidth: 400 }}>
+            <Search size={15} className={styles.searchIcon} />
+            <input
+              className={`${styles.input} ${styles.searchInput}`}
+              placeholder="Enter phone number or UHID..."
+              value={patientSearch}
+              onChange={(e) => setPatientSearch(e.target.value)}
+            />
+            {isSearchingPatient && <div className={styles.miniLoader} />}
+          </div>
+          {patientSearchResults.length > 0 && (
+            <div style={{ position: 'absolute', top: 60, left: 0, width: 400, background: '#fff', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 50, maxHeight: 200, overflowY: 'auto', border: '1px solid #e2e8f0' }}>
+              {patientSearchResults.map(p => (
+                <div key={p.id} onClick={() => handleSelectPatient(p)} style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>{p.name} ({p.uhid})</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>Mobile: {p.mobile} | Age: {p.age || 'N/A'} | {p.gender}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Patient Name *</label>
@@ -382,7 +532,7 @@ export default function ManualPrescriptionPage() {
               type="text"
               className={styles.input}
               value={patientDetails.patient_name}
-              onChange={(e) => setPatientDetails({ ...patientDetails, patient_name: e.target.value })}
+              onChange={(e) => { setPatientDetails({ ...patientDetails, patient_name: e.target.value }); setSelectedPatientId(null) }}
               placeholder="Full Name"
               required
             />
@@ -415,7 +565,7 @@ export default function ManualPrescriptionPage() {
               type="text"
               className={styles.input}
               value={patientDetails.mobile}
-              onChange={(e) => setPatientDetails({ ...patientDetails, mobile: e.target.value })}
+              onChange={(e) => { setPatientDetails({ ...patientDetails, mobile: e.target.value }); setSelectedPatientId(null) }}
               placeholder="Mobile Number"
             />
           </div>
