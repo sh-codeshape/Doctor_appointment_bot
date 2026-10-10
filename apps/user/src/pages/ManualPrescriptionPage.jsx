@@ -570,6 +570,16 @@ export default function ManualPrescriptionPage() {
             />
           </div>
           <div>
+            <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Address</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={patientDetails.place}
+              onChange={(e) => setPatientDetails({ ...patientDetails, place: e.target.value })}
+              placeholder="City or Area"
+            />
+          </div>
+          <div>
             <label style={{ display: 'block', fontSize: 13, marginBottom: 4, fontWeight: 500, color: '#475569' }}>Doctor</label>
             <select
               className={styles.select}
